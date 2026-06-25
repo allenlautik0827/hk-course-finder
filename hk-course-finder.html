@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>香港留学课程检索系统 - HK Course Finder</title>
+<style>
+:root {
+    --primary: #1a3a5c; --primary-light: #2c5f8a; --accent: #c8a45a;
+    --bg: #f5f6f8; --white: #ffffff; --border: #e2e6ea; --text: #2c3e50;
+    --text-secondary: #6b7c93; --success: #27ae60; --danger: #e74c3c;
+    --warning: #f39c12; --info: #3498db; --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 8px; --transition: all 0.2s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.15);flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-logo{width:42px;height:42px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold}
+.header h1{font-size:22px;font-weight:600;letter-spacing:0.5px}
+.header-subtitle{font-size:12px;opacity:0.8;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:12px}
+.admin-badge{background:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px}
+.tab-nav{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 32px;overflow-x:auto;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.tab-btn{padding:14px 28px;background:none;border:none;font-size:15px;font-weight:500;color:var(--text-secondary);cursor:pointer;border-bottom:3px solid transparent;transition:var(--transition);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.tab-btn:hover{color:var(--primary);background:rgba(26,58,92,0.03)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--accent);font-weight:600}
+.main-content{padding:24px 32px;max-width:1600px;margin:0 auto}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.panel{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.panel-header h3{font-size:16px;font-weight:600}
+.panel-body{padding:20px}
+.panel-body.no-padding{padding:0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:6px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition)}
+.btn-primary{background:var(--primary);color:white}
+.btn-primary:hover{background:var(--primary-light)}
+.btn-success{background:var(--success);color:white}.btn-success:hover{opacity:0.9}
+.btn-danger{background:var(--danger);color:white}.btn-danger:hover{opacity:0.9}
+.btn-outline{background:white;color:var(--primary);border:1.5px solid var(--primary)}
+.btn-outline:hover{background:rgba(26,58,92,0.05)}
+.btn-xs{padding:3px 10px;font-size:12px;border-radius:4px}
+.table-wrapper{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{background:#f8f9fb;padding:10px 12px;text-align:left;font-weight:600;color:var(--text-secondary);border-bottom:2px solid var(--border);white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:0.3px}
+table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table tbody tr:hover{background:#f8fafd}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-primary{background:#e8f0fe;color:var(--primary)}
+.badge-success{background:#e8f8ef;color:var(--success)}
+.badge-info{background:#eaf2f8;color:var(--info)}
+.badge-accent{background:#fdf6e8;color:#b8860b}
+.badge-warning{background:#fef5e7;color:var(--warning)}
+.text-muted{color:var(--text-secondary);font-size:12px}
+.filter-bar{display:flex;flex-wrap:wrap;gap:12px;padding:16px 20px;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filter-group label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px}
+.filter-group select,.filter-group input{padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:white;min-width:130px;transition:var(--transition)}
+.filter-group select:focus,.filter-group input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,58,92,0.08)}
+.filter-group input[type=number]{min-width:90px;width:110px}
+.filter-actions{display:flex;gap:8px;align-items:flex-end;padding-bottom:1px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.form-full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:13px;font-weight:600;color:var(--text)}
+.form-group label .required{color:var(--danger)}
+.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);transition:var(--transition);font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,58,92,0.08)}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.form-section h4{font-size:15px;font-weight:600;color:var(--primary);margin-bottom:14px}
+.form-check{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:4px}
+.form-check input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+.form-inline-input{margin-top:6px}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.5);justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto}
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:12px;width:100%;max-width:900px;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:modalIn .2s ease}
+.modal.wide{max-width:1100px}
+@keyframes modalIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:18px;font-weight:600}
+.modal-close{width:32px;height:32px;border:none;background:#f0f2f5;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.modal-close:hover{background:#e0e3e8}
+.modal-body{padding:24px;max-height:65vh;overflow-y:auto}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px}
+.detail-item{padding:6px 0}
+.detail-item .detail-label{font-size:12px;color:var(--text-secondary);font-weight:500}
+.detail-item .detail-value{font-size:14px;font-weight:500;margin-top:2px}
+.detail-full{grid-column:1/-1}
+.detail-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.detail-section h4{font-size:15px;font-weight:600;color:var(--primary);margin-bottom:12px}
+.link-item a{color:var(--info);text-decoration:none;font-size:13px}
+.link-item a:hover{text-decoration:underline}
+.stats-row{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.stat-card{flex:1;min-width:150px;background:var(--white);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
+.stat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.stat-icon.blue{background:#e8f0fe;color:var(--primary)}
+.stat-icon.green{background:#e8f8ef;color:var(--success)}
+.stat-icon.amber{background:#fef5e7;color:var(--warning)}
+.stat-icon.purple{background:#f0e8f8;color:#8e44ad}
+.stat-value{font-size:24px;font-weight:700;line-height:1.2}
+.stat-label{font-size:12px;color:var(--text-secondary)}
+.empty-state{padding:48px 20px;text-align:center;color:var(--text-secondary)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:0.5}
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:8px;color:white;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:slideIn .3s ease;max-width:360px}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--danger)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.audit-action{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600}
+.audit-action.create{background:#e8f8ef;color:var(--success)}
+.audit-action.update{background:#eaf2f8;color:var(--info)}
+.audit-action.delete{background:#fdecea;color:var(--danger)}
+.changes-detail{font-size:12px;max-width:300px}
+.changes-detail .change-row{padding:2px 0}
+.changes-detail .field{font-weight:600;color:var(--primary)}
+.clickable{cursor:pointer;color:var(--info)}
+.clickable:hover{text-decoration:underline;color:#2471a3}
+@media(max-width:768px){
+.header{padding:16px}.tab-nav{padding:0 12px}.tab-btn{padding:12px 16px;font-size:13px}
+.main-content{padding:16px}.form-grid,.form-grid-3,.detail-grid{grid-template-columns:1fr}
+.filter-bar{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="header-left">
+<div class="header-logo">🎓</div>
+<div><h1>香港留学课程检索系统</h1><div class="header-subtitle">HK Course Finder — 快速匹配最适合的留学课程</div></div>
+</div>
+<div class="header-right"><div class="admin-badge">👤 管理员</div></div>
+</div>
+
+<div class="tab-nav">
+<button class="tab-btn active" onclick="switchTab('schools')">🏫 学校名录</button>
+<button class="tab-btn" onclick="switchTab('courses')">📚 课程检索</button>
+<button class="tab-btn" onclick="switchTab('audit')">📋 操作日志</button>
+</div>
+
+<div class="main-content">
+
+<div id="tab-schools" class="tab-content active">
+<div class="stats-row" id="school-stats"></div>
+<div class="panel">
+<div class="panel-header"><h3>📋 学校列表</h3><button class="btn btn-primary" onclick="openSchoolModal()">+ 添加学校</button></div>
+<div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
+<th>#</th><th>学校名称（中文）</th><th>简称</th><th>学校名称（英文）</th><th>官方网站</th><th>课程数量</th><th>操作</th>
+</tr></thead><tbody id="schools-tbody"></tbody></table></div></div>
+</div></div>
+
+<div id="tab-courses" class="tab-content">
+<div class="stats-row" id="course-stats"></div>
+<div class="panel">
+<div class="panel-header"><h3>🔍 课程筛选</h3><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button></div>
+<div class="filter-bar">
+<div class="filter-group"><label>课程编号</label><input type="text" id="f-code" placeholder="输入编号…"></div>
+<div class="filter-group"><label>学校名称</label><select id="f-school"><option value="">全部学校</option></select></div>
+<div class="filter-group"><label>学科分类</label><select id="f-subject"><option value="">全部学科</option><option>商科</option><option>工科</option><option>文科</option><option>社科</option><option>教育</option><option>法律</option><option>医科</option><option>理科</option></select></div>
+<div class="filter-group"><label>授课方式</label><select id="f-mode"><option value="">全部</option><option>授课式</option><option>研究式</option></select></div>
+<div class="filter-group"><label>课程名称</label><input type="text" id="f-name" placeholder="关键词检索…"></div>
+<div class="filter-group"><label>学制</label><select id="f-study-mode"><option value="">全部</option><option>全日制/非全日制</option><option>仅全日制</option><option>仅非全日制</option></select></div>
+<div class="filter-group"><label>学年</label><select id="f-year"><option value="">全部</option></select></div>
+<div class="filter-group"><label>身份</label><select id="f-identity"><option value="">全部</option><option>本地生/非本地生</option><option>仅本地生</option><option>仅非本地生</option></select></div>
+<div class="filter-group"><label>学费(HKD)最低</label><input type="number" id="f-tuition-min" placeholder="最低" step="1000"></div>
+<div class="filter-group"><label>学费(HKD)最高</label><input type="number" id="f-tuition-max" placeholder="最高" step="1000"></div>
+<div class="filter-group"><label>截止日期排序</label><select id="f-deadline-sort"><option value="">默认</option><option value="asc">到期日近→远</option><option value="desc">到期日远→近</option></select></div>
+<div class="filter-actions">
+<button class="btn btn-primary" onclick="renderCourses()">🔍 搜索</button>
+<button class="btn btn-outline" onclick="resetFilters()">↺ 重置</button>
+</div>
+</div></div>
+<div class="panel">
+<div class="panel-header"><h3>📚 课程列表 <span id="course-count" class="text-muted"></span></h3></div>
+<div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
+<th>课程编号</th><th>学校</th><th>学科</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>学费（港币）</th><th>截止报名</th><th>操作</th>
+</tr></thead><tbody id="courses-tbody"></tbody></table></div></div>
+</div></div>
+
+<div id="tab-audit" class="tab-content">
+<div class="panel">
+<div class="panel-header"><h3>📋 操作日志</h3>
+<select id="audit-filter" onchange="renderAuditLog()" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">
+<option value="">全部表</option><option value="schools">学校</option><option value="courses">课程</option>
+</select></div>
+<div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
+<th>操作类型</th><th>表名</th><th>记录</th><th>变更详情</th><th>修改日期</th><th>修改时间</th>
+</tr></thead><tbody id="audit-tbody"></tbody></table></div></div>
+</div></div>
+</div>
+
+<!-- School Modal -->
+<div class="modal-overlay" id="sm-overlay"><div class="modal">
+<div class="modal-header"><h2 id="sm-title">添加学校</h2><button class="modal-close" onclick="closeModal('sm-overlay')">✕</button></div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-group"><label><span class="required">*</span> 学校名称（中文）</label><input type="text" id="sm-name-cn"></div>
+<div class="form-group"><label><span class="required">*</span> 简称</label><input type="text" id="sm-abbr"></div>
+<div class="form-group"><label><span class="required">*</span> 学校名称（英文）</label><input type="text" id="sm-name-en"></div>
+<div class="form-group"><label>官方网站</label><input type="url" id="sm-website"></div>
+</div></div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal('sm-overlay')">取消</button>
+<button class="btn btn-primary" onclick="saveSchool()">💾 保存</button>
+</div></div></div>
+
+<!-- Course Modal -->
+<div class="modal-overlay" id="cm-overlay"><div class="modal wide">
+<div class="modal-header"><h2 id="cm-title">添加课程</h2><button class="modal-close" onclick="closeModal('cm-overlay')">✕</button></div>
+<div class="modal-body">
+<input type="hidden" id="cm-id">
+<div class="form-section"><h4>📌 基本信息</h4></div>
+<div class="form-grid-3">
+<div class="form-group"><label><span class="required">*</span> 学校</label><select id="cm-school"></select></div>
+<div class="form-group"><label><span class="required">*</span> 学科分类</label><select id="cm-subject"><option value="">请选择</option><option>商科</option><option>工科</option><option>文科</option><option>社科</option><option>教育</option><option>法律</option><option>医科</option><option>理科</option></select></div>
+<div class="form-group"><label><span class="required">*</span> 授课方式</label><select id="cm-teaching-mode"><option value="">请选择</option><option>授课式</option><option>研究式</option></select></div>
+<div class="form-group"><label><span class="required">*</span> 课程名称（中文全称）</label><input type="text" id="cm-name-cn"></div>
+<div class="form-group"><label>课程名称（英文简称）</label><input type="text" id="cm-name-en"></div>
+<div class="form-group"><label><span class="required">*</span> 授课语言</label><select id="cm-language"><option value="">请选择</option><option>英语</option><option>粤语</option><option>普通话</option><option>其他</option></select></div>
+<div class="form-group"><label><span class="required">*</span> 学制</label><select id="cm-study-mode" onchange="toggleCmDuration()"><option value="">请选择</option><option>全日制/非全日制</option><option>仅全日制</option><option>仅非全日制</option></select></div>
+<div class="form-group" id="cm-ft-g"><label>全日制修读时间（年）</label><input type="number" id="cm-dur-ft" step="0.5" min="0.5" placeholder="如：1"></div>
+<div class="form-group" id="cm-pt-g"><label>非全日制修读时间（年）</label><input type="number" id="cm-dur-pt" step="0.5" min="0.5" placeholder="如：2"></div>
+<div class="form-group"><label><span class="required">*</span> 学年</label><select id="cm-year"></select></div>
+<div class="form-group"><label><span class="required">*</span> 身份</label><select id="cm-identity"><option value="">请选择</option><option>本地生/非本地生</option><option>仅本地生</option><option>仅非本地生</option></select></div>
+<div class="form-group"><label>学费 - 本地生 (HKD)</label><input type="number" id="cm-tuition-local" step="1000" min="0"></div>
+<div class="form-group"><label>学费 - 非本地生 (HKD)</label><input type="number" id="cm-tuition-nonlocal" step="1000" min="0"></div>
+<div class="form-group"><label>截止报名 - 本地生</label><input type="date" id="cm-deadline-local"></div>
+<div class="form-group"><label>截止报名 - 非本地生</label><input type="date" id="cm-deadline-nonlocal"></div>
+<div class="form-group"><label>资历架构</label><select id="cm-qf"><option value="">请选择</option><option>QF Level 5</option><option>QF Level 6</option><option>QF Level 7</option></select></div>
+<div class="form-group"><label>资历名册登记号码</label><input type="text" id="cm-qr"></div>
+</div>
+<div class="form-section"><h4>📝 报读要求</h4></div>
+<div class="form-grid">
+<div class="form-group form-full"><label>学历要求</label><textarea id="cm-edu-req" rows="2" placeholder="如：持有认可学士学位"></textarea></div>
+</div>
+<div class="form-grid" style="margin-top:12px">
+<div class="form-group"><label>中文要求</label>
+<div class="form-check"><input type="checkbox" id="cm-ch-exempt"> 持有以中文授课的认可学位免试</div>
+<input type="text" id="cm-ch-dse" placeholder="DSE 级别" class="form-inline-input">
+<input type="text" id="cm-ch-gaokao" placeholder="高考 分数" class="form-inline-input">
+<input type="text" id="cm-ch-hsk" placeholder="HSK 级别" class="form-inline-input">
+<input type="text" id="cm-ch-other" placeholder="其他" class="form-inline-input">
+</div>
+<div class="form-group"><label>英文要求</label>
+<div class="form-check"><input type="checkbox" id="cm-en-exempt"> 持有以英文授课的认可学位免试</div>
+<input type="text" id="cm-en-dse" placeholder="DSE 级别" class="form-inline-input">
+<input type="text" id="cm-en-gaokao" placeholder="高考 分数" class="form-inline-input">
+<input type="text" id="cm-en-toefl-pbt" placeholder="TOEFL 笔考" class="form-inline-input">
+<input type="text" id="cm-en-toefl-ibt" placeholder="TOEFL 网考" class="form-inline-input">
+<input type="text" id="cm-en-ielts" placeholder="IELTS 分数" class="form-inline-input">
+<input type="text" id="cm-en-cet4" placeholder="CET-4 分数" class="form-inline-input">
+<input type="text" id="cm-en-other" placeholder="其他" class="form-inline-input">
+</div>
+</div>
+<div class="form-grid" style="margin-top:12px">
+<div class="form-group form-full"><label>其他要求</label><textarea id="cm-other-req" rows="2" placeholder="如：相关工作经验优先"></textarea></div>
+<div class="form-group"><label>面试要求</label><select id="cm-interview"><option value="0">不需要</option><option value="1">需要</option></select></div>
+</div>
+<div class="form-section"><h4>📖 课程细节</h4></div>
+<div class="form-grid">
+<div class="form-group form-full"><label>课程介绍</label><textarea id="cm-desc" rows="3" placeholder="填写课程介绍…"></textarea></div>
+<div class="form-group"><label>课程主页</label><input type="url" id="cm-page-url" placeholder="https://…"></div>
+<div class="form-group"><label>课程简章</label><input type="url" id="cm-brochure-url" placeholder="https://…"></div>
+</div></div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal('cm-overlay')">取消</button>
+<button class="btn btn-primary" onclick="saveCourse()">💾 保存</button>
+</div></div></div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="dm-overlay"><div class="modal wide">
+<div class="modal-header"><h2>📖 课程详情</h2><button class="modal-close" onclick="closeModal('dm-overlay')">✕</button></div>
+<div class="modal-body" id="dm-body"></div></div></div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ==================== DATA LAYER ====================
+const STORAGE_KEY = 'hk_course_finder_data';
+
+const DEFAULT_SCHOOLS = [
+    {id:1,name_cn:'香港恒生大学',abbreviation:'HSU',name_en:'The Hang Seng University of Hong Kong',website:'https://gs.hsu.edu.hk/'},
+    {id:2,name_cn:'香港珠海学院',abbreviation:'CHC',name_en:'Hong Kong Chu Hai College',website:'https://www.chuhai.edu.hk/'},
+    {id:3,name_cn:'香港都会大学',abbreviation:'HKMU',name_en:'Hong Kong Metropolitan University',website:'https://www.hkmu.edu.hk/'},
+    {id:4,name_cn:'香港理工大学',abbreviation:'PolyU',name_en:'The Hong Kong Polytechnic University',website:'https://www.polyu.edu.hk/'},
+    {id:5,name_cn:'香港理工大学专业进修学院',abbreviation:'PolySeed',name_en:'SPEED (The Hong Kong Polytechnic University)',website:'https://www.speed-polyu.edu.hk/'},
+    {id:6,name_cn:'香港浸会大学',abbreviation:'HKBU',name_en:'Hong Kong Baptist University',website:'https://www.sci.hkbu.edu.hk/'},
+    {id:7,name_cn:'香港大学',abbreviation:'HKU',name_en:'The University of Hong Kong',website:'https://www.hku.hk/'},
+    {id:8,name_cn:'香港大学专业进修学院',abbreviation:'HKUSpace',name_en:'HKU School of Professional and Continuing Education',website:'https://hkuspace.hku.hk/cht'},
+    {id:9,name_cn:'香港科技大学',abbreviation:'HKUST',name_en:'The Hong Kong University of Science and Technology',website:'https://fytgs.hkust.edu.hk/'},
+    {id:10,name_cn:'香港岭南大学',abbreviation:'LNU',name_en:'Lingnan University',website:'https://www.ln.edu.hk/cht'},
+    {id:11,name_cn:'香港教育大学',abbreviation:'EDU',name_en:'The Education University of Hong Kong',website:'https://www.eduhk.hk/en/'},
+    {id:12,name_cn:'香港城市大学',abbreviation:'CityU',name_en:'City University of Hong Kong',website:'https://www.cityu.edu.hk/zh-hk'},
+    {id:13,name_cn:'香港中文大学',abbreviation:'CUHK',name_en:'The Chinese University of Hong Kong',website:'https://www.cuhk.edu.hk/chinese/'},
+    {id:14,name_cn:'香港树人大学',abbreviation:'HKSYU',name_en:'Hong Kong Shue Yan University',website:'https://www.hksyu.edu/tc/home'},
+    {id:15,name_cn:'香港伍伦贡学院',abbreviation:'UOWC',name_en:'Hong Kong UOW College',website:'https://www.uowchk.edu.hk/'},
+    {id:16,name_cn:'圣方济各大学',abbreviation:'SFU',name_en:'Saint Francis University',website:'https://www.sfu.edu.hk/tc/home/index.html'},
+    {id:17,name_cn:'东华学院',abbreviation:'TWC',name_en:'Tung Wah College',website:'https://www.twc.edu.hk/tc/'},
+    {id:18,name_cn:'香港演艺学院',abbreviation:'HKAPA',name_en:'The Hong Kong Academy for Performing Arts',website:'https://www.hkapa.edu/tch'},
+];
+
+let DB = {schools:[],courses:[],auditLog:[],nextSchoolId:19,nextCourseNum:1};
+
+function loadDB(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+        try{DB=JSON.parse(raw)}catch(e){initDB()}
+    }else{initDB()}
+}
+function saveDB(){localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}
+function initDB(){
+    DB={schools:JSON.parse(JSON.stringify(DEFAULT_SCHOOLS)),courses:[],auditLog:[],nextSchoolId:19,nextCourseNum:1};
+    saveDB();
+}
+
+function getSchool(id){return DB.schools.find(s=>s.id===id)}
+function newCourseCode(){const c='HK-'+String(DB.nextCourseNum).padStart(4,'0');DB.nextCourseNum++;return c}
+function nowDate(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function nowTime(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0')}
+
+function addAudit(table,recordId,recordName,action,changes){
+    DB.auditLog.push({
+        id:DB.auditLog.length+1,
+        table_name:table,record_id:recordId,record_name:recordName,
+        action:action,changes:changes,
+        modified_date:nowDate(),modified_time:nowTime()
+    });
+    saveDB();
+}
+
+// ==================== TOAST ====================
+function toast(msg,type='success'){
+    const c=document.getElementById('toast-container');
+    const e=document.createElement('div');e.className='toast '+type;e.textContent=msg;c.appendChild(e);
+    setTimeout(()=>e.remove(),3000);
+}
+
+// ==================== MODAL ====================
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')})});
+
+// ==================== TAB ====================
+function switchTab(name){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.querySelector('[onclick="switchTab(\''+name+'\')"]').classList.add('active');
+    document.getElementById('tab-'+name).classList.add('active');
+    if(name==='schools')renderSchools();
+    else if(name==='courses'){populateFilters();renderCourses()}
+    else if(name==='audit')renderAuditLog();
+}
+
+// ==================== SCHOOLS ====================
+function renderSchools(){
+    const tbody=document.getElementById('schools-tbody');
+    if(!DB.schools.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="icon">🏫</div><p>暂无学校数据</p></div></td></tr>';updateSchoolStats();return}
+    tbody.innerHTML=DB.schools.map((s,i)=>{
+        const tc=DB.courses.filter(c=>c.school_id===s.id&&c.teaching_mode==='授课式').length;
+        const rc=DB.courses.filter(c=>c.school_id===s.id&&c.teaching_mode==='研究式').length;
+        return `<tr>
+<td>${i+1}</td><td><strong>${esc(s.name_cn)}</strong></td>
+<td><span class="badge badge-primary">${esc(s.abbreviation)}</span></td>
+<td>${esc(s.name_en)}</td>
+<td>${s.website?'<a href="'+esc(s.website)+'" target="_blank" class="clickable">🔗 访问</a>':'-'}</td>
+<td><span class="badge badge-info">授课式 ${tc}</span> <span class="badge badge-accent">研究式 ${rc}</span></td>
+<td><button class="btn btn-outline btn-xs" onclick="editSchool(${s.id})">✏️ 编辑</button>
+<button class="btn btn-danger btn-xs" onclick="deleteSchool(${s.id})">🗑 删除</button></td></tr>`;
+    }).join('');
+    updateSchoolStats();
+}
+function updateSchoolStats(){
+    const tc=DB.courses.length;
+    document.getElementById('school-stats').innerHTML=
+    `<div class="stat-card"><div class="stat-icon blue">🏫</div><div><div class="stat-value">${DB.schools.length}</div><div class="stat-label">院校总数</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${tc}</div><div class="stat-label">课程总数</div></div></div>`;
+}
+
+function openSchoolModal(id){
+    document.getElementById('sm-overlay').classList.add('show');
+    document.getElementById('sm-title').textContent=id?'编辑学校':'添加学校';
+    document.getElementById('sm-name-cn').value='';document.getElementById('sm-abbr').value='';
+    document.getElementById('sm-name-en').value='';document.getElementById('sm-website').value='';
+    document.getElementById('sm-name-cn').dataset.editId='';
+    if(id){const s=getSchool(id);if(s){
+        document.getElementById('sm-name-cn').value=s.name_cn;
+        document.getElementById('sm-abbr').value=s.abbreviation;
+        document.getElementById('sm-name-en').value=s.name_en;
+        document.getElementById('sm-website').value=s.website||'';
+        document.getElementById('sm-name-cn').dataset.editId=id;
+    }}
+}
+function saveSchool(){
+    const id=parseInt(document.getElementById('sm-name-cn').dataset.editId)||0;
+    const data={
+        name_cn:document.getElementById('sm-name-cn').value.trim(),
+        abbreviation:document.getElementById('sm-abbr').value.trim(),
+        name_en:document.getElementById('sm-name-en').value.trim(),
+        website:document.getElementById('sm-website').value.trim()
+    };
+    if(!data.name_cn||!data.abbreviation||!data.name_en){toast('请填写所有必填字段','error');return}
+    if(id){
+        const s=getSchool(id);if(!s)return;
+        const changes={};
+        for(const[k,v]of Object.entries(data)){if(s[k]!==v)changes[k]={old:s[k],new:v}}
+        Object.assign(s,data);
+        addAudit('schools',id,s.name_cn,'UPDATE',changes);
+        toast('学校修改成功');
+    }else{
+        if(DB.schools.find(s=>s.abbreviation===data.abbreviation)){toast('学校简称已存在','error');return}
+        const ns={id:DB.nextSchoolId++,...data};
+        DB.schools.push(ns);
+        addAudit('schools',ns.id,ns.name_cn,'CREATE',data);
+        toast('学校添加成功');
+    }
+    saveDB();closeModal('sm-overlay');renderSchools();
+}
+function editSchool(id){openSchoolModal(id)}
+function deleteSchool(id){
+    const s=getSchool(id);if(!s)return;
+    if(!confirm('确定删除学校「'+s.name_cn+'」吗？\n\n此操作将同时删除该校所有课程，不可恢复。'))return;
+    const oldData={...s};
+    DB.courses=DB.courses.filter(c=>c.school_id!==id);
+    DB.schools=DB.schools.filter(x=>x.id!==id);
+    addAudit('schools',id,oldData.name_cn,'DELETE',oldData);
+    saveDB();renderSchools();toast('学校已删除');
+}
+
+// ==================== COURSES ====================
+function populateFilters(){
+    const fs=document.getElementById('f-school');
+    fs.innerHTML='<option value="">全部学校</option>'+DB.schools.map(s=>'<option value="'+s.id+'">'+esc(s.abbreviation)+' - '+esc(s.name_cn)+'</option>').join('');
+
+    const fy=document.getElementById('f-year');
+    const cy=new Date().getFullYear();
+    let yo='<option value="">全部</option>';
+    for(let y=cy-1;y<=cy+3;y++)yo+='<option value="'+y+'/'+(y+1)+'">'+y+'/'+(y+1)+'</option>';
+    fy.innerHTML=yo;
+
+    const cs=document.getElementById('cm-school');
+    cs.innerHTML='<option value="">请选择学校</option>'+DB.schools.map(s=>'<option value="'+s.id+'">'+esc(s.abbreviation)+' - '+esc(s.name_cn)+'</option>').join('');
+    const cy2=document.getElementById('cm-year');
+    cy2.innerHTML='<option value="">请选择</option>'+yo.replace('<option value="">全部</option>','');
+}
+
+function getFilteredCourses(){
+    let list=[...DB.courses];
+    const code=document.getElementById('f-code').value.trim().toLowerCase();
+    const sid=document.getElementById('f-school').value;
+    const subj=document.getElementById('f-subject').value;
+    const mode=document.getElementById('f-mode').value;
+    const name=document.getElementById('f-name').value.trim().toLowerCase();
+    const sm=document.getElementById('f-study-mode').value;
+    const year=document.getElementById('f-year').value;
+    const idt=document.getElementById('f-identity').value;
+    const tmin=parseFloat(document.getElementById('f-tuition-min').value)||0;
+    const tmax=parseFloat(document.getElementById('f-tuition-max').value)||Infinity;
+    const dsort=document.getElementById('f-deadline-sort').value;
+    if(code)list=list.filter(c=>c.course_code.toLowerCase().includes(code));
+    if(sid)list=list.filter(c=>c.school_id===parseInt(sid));
+    if(subj)list=list.filter(c=>c.subject_category===subj);
+    if(mode)list=list.filter(c=>c.teaching_mode===mode);
+    if(name)list=list.filter(c=>c.course_name_cn.toLowerCase().includes(name)||(c.course_name_en||'').toLowerCase().includes(name));
+    if(sm)list=list.filter(c=>c.study_mode===sm);
+    if(year)list=list.filter(c=>c.academic_year===year);
+    if(idt)list=list.filter(c=>c.student_identity===idt);
+    if(tmin>0||tmax<Infinity)list=list.filter(c=>(c.tuition_non_local||0)>=tmin&&(c.tuition_non_local||0)<=tmax||(c.tuition_local||0)>=tmin&&(c.tuition_local||0)<=tmax);
+    if(dsort==='asc')list.sort((a,b)=>(a.deadline_non_local||'9999-99-99').localeCompare(b.deadline_non_local||'9999-99-99'));
+    else if(dsort==='desc')list.sort((a,b)=>(b.deadline_non_local||'0000-00-00').localeCompare(a.deadline_non_local||'0000-00-00'));
+    return list;
+}
+function renderCourses(){
+    const list=getFilteredCourses();
+    document.getElementById('course-count').textContent='（共 '+list.length+' 个课程）';
+    const tbody=document.getElementById('courses-tbody');
+    if(!list.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
+    tbody.innerHTML=list.map(c=>{
+        const s=getSchool(c.school_id);
+        let dur='-';
+        if(c.study_mode==='全日制/非全日制')dur=(c.study_duration_ft?c.study_duration_ft+'年':'—')+'/'+(c.study_duration_pt?c.study_duration_pt+'年':'—');
+        else if(c.study_mode==='仅全日制')dur=c.study_duration_ft?c.study_duration_ft+'年':'—';
+        else dur=c.study_duration_pt?c.study_duration_pt+'年':'—';
+        const tl=c.tuition_local?'HKD'+Number(c.tuition_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
+        const tn=c.tuition_non_local?'HKD'+Number(c.tuition_non_local).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
+        const dl=c.deadline_local?fmtDate(c.deadline_local):'—';
+        const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):'—';
+        return `<tr>
+<td><span class="badge badge-primary">${esc(c.course_code)}</span></td>
+<td><strong>${s?s.abbreviation:'—'}</strong></td>
+<td><span class="badge badge-info">${esc(c.subject_category)}</span></td>
+<td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
+<td>${esc(c.study_mode)}</td><td>${esc(c.teaching_language)}</td><td>${dur}</td>
+<td>${esc(c.academic_year)}</td><td>${esc(c.student_identity)}</td>
+<td style="font-size:12px">${tl} / ${tn}</td>
+<td style="font-size:12px">${dl}（本地生）/ ${dn}（非本地生）</td>
+<td><button class="btn btn-outline btn-xs" onclick="editCourse(${c.id})">✏️</button>
+<button class="btn btn-danger btn-xs" onclick="deleteCourse(${c.id})">🗑</button></td></tr>`;
+    }).join('');
+    updateCourseStats(list);
+}
+function updateCourseStats(list){
+    const schools=new Set(list.map(c=>c.school_id)).size;
+    document.getElementById('course-stats').innerHTML=
+    `<div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${list.length}</div><div class="stat-label">匹配课程</div></div></div>
+    <div class="stat-card"><div class="stat-icon blue">🏫</div><div><div class="stat-value">${schools}</div><div class="stat-label">涉及院校</div></div></div>
+    <div class="stat-card"><div class="stat-icon amber">📖</div><div><div class="stat-value">${list.filter(c=>c.teaching_mode==='授课式').length}</div><div class="stat-label">授课式</div></div></div>
+    <div class="stat-card"><div class="stat-icon purple">🔬</div><div><div class="stat-value">${list.filter(c=>c.teaching_mode==='研究式').length}</div><div class="stat-label">研究式</div></div></div>`;
+}
+function resetFilters(){
+    ['f-code','f-school','f-subject','f-mode','f-name','f-study-mode','f-year','f-identity','f-tuition-min','f-tuition-max','f-deadline-sort'].forEach(id=>document.getElementById(id).value='');
+    renderCourses();
+}
+
+function openCourseModal(id){
+    document.getElementById('cm-overlay').classList.add('show');
+    document.getElementById('cm-id').value='';
+    document.getElementById('cm-title').textContent='添加课程';
+    // Reset form
+    ['cm-school','cm-subject','cm-teaching-mode','cm-name-cn','cm-name-en','cm-language','cm-study-mode',
+     'cm-dur-ft','cm-dur-pt','cm-year','cm-identity','cm-tuition-local','cm-tuition-nonlocal',
+     'cm-deadline-local','cm-deadline-nonlocal','cm-qf','cm-qr','cm-edu-req','cm-ch-dse','cm-ch-gaokao',
+     'cm-ch-hsk','cm-ch-other','cm-en-dse','cm-en-gaokao','cm-en-toefl-pbt','cm-en-toefl-ibt',
+     'cm-en-ielts','cm-en-cet4','cm-en-other','cm-other-req','cm-desc','cm-page-url','cm-brochure-url'].forEach(id=>{
+         const el=document.getElementById(id);if(el)el.value='';
+     });
+    ['cm-ch-exempt','cm-en-exempt'].forEach(id=>document.getElementById(id).checked=false);
+    document.getElementById('cm-interview').value='0';
+    populateFilters();
+    toggleCmDuration();
+
+    if(id){
+        document.getElementById('cm-title').textContent='编辑课程';
+        const c=DB.courses.find(x=>x.id===id);if(!c)return;
+        document.getElementById('cm-id').value=c.id;
+        setVal('cm-school',c.school_id);setVal('cm-subject',c.subject_category);
+        setVal('cm-teaching-mode',c.teaching_mode);setVal('cm-name-cn',c.course_name_cn);
+        setVal('cm-name-en',c.course_name_en);setVal('cm-language',c.teaching_language);
+        setVal('cm-study-mode',c.study_mode);setVal('cm-dur-ft',c.study_duration_ft||'');
+        setVal('cm-dur-pt',c.study_duration_pt||'');setVal('cm-year',c.academic_year);
+        setVal('cm-identity',c.student_identity);setVal('cm-tuition-local',c.tuition_local||'');
+        setVal('cm-tuition-nonlocal',c.tuition_non_local||'');
+        setVal('cm-deadline-local',c.deadline_local||'');setVal('cm-deadline-nonlocal',c.deadline_non_local||'');
+        setVal('cm-qf',c.qf_level||'');setVal('cm-qr',c.qr_number||'');
+        setVal('cm-edu-req',c.education_requirement||'');
+        document.getElementById('cm-ch-exempt').checked=!!c.chinese_exempt;
+        setVal('cm-ch-dse',c.chinese_dse||'');setVal('cm-ch-gaokao',c.chinese_gaokao||'');
+        setVal('cm-ch-hsk',c.chinese_hsk||'');setVal('cm-ch-other',c.chinese_other||'');
+        document.getElementById('cm-en-exempt').checked=!!c.english_exempt;
+        setVal('cm-en-dse',c.english_dse||'');setVal('cm-en-gaokao',c.english_gaokao||'');
+        setVal('cm-en-toefl-pbt',c.english_toefl_pbt||'');setVal('cm-en-toefl-ibt',c.english_toefl_ibt||'');
+        setVal('cm-en-ielts',c.english_ielts||'');setVal('cm-en-cet4',c.english_cet4||'');
+        setVal('cm-en-other',c.english_other||'');setVal('cm-other-req',c.other_requirements||'');
+        setVal('cm-interview',c.interview_required?'1':'0');
+        setVal('cm-desc',c.course_description||'');setVal('cm-page-url',c.course_page_url||'');
+        setVal('cm-brochure-url',c.course_brochure_url||'');
+        toggleCmDuration();
+    }
+}
+function setVal(id,val){const el=document.getElementById(id);if(el)el.value=val}
+function toggleCmDuration(){
+    const mode=document.getElementById('cm-study-mode').value;
+    document.getElementById('cm-ft-g').style.display=(mode==='仅非全日制')?'none':'flex';
+    document.getElementById('cm-pt-g').style.display=(mode==='仅全日制')?'none':'flex';
+}
+function saveCourse(){
+    const eid=document.getElementById('cm-id').value;
+    const data={
+        school_id:parseInt(document.getElementById('cm-school').value)||0,
+        subject_category:document.getElementById('cm-subject').value,
+        course_name_cn:document.getElementById('cm-name-cn').value.trim(),
+        course_name_en:document.getElementById('cm-name-en').value.trim(),
+        teaching_mode:document.getElementById('cm-teaching-mode').value,
+        study_mode:document.getElementById('cm-study-mode').value,
+        study_duration_ft:parseFloat(document.getElementById('cm-dur-ft').value)||null,
+        study_duration_pt:parseFloat(document.getElementById('cm-dur-pt').value)||null,
+        teaching_language:document.getElementById('cm-language').value,
+        academic_year:document.getElementById('cm-year').value,
+        student_identity:document.getElementById('cm-identity').value,
+        tuition_local:parseFloat(document.getElementById('cm-tuition-local').value)||0,
+        tuition_non_local:parseFloat(document.getElementById('cm-tuition-nonlocal').value)||0,
+        deadline_local:document.getElementById('cm-deadline-local').value,
+        deadline_non_local:document.getElementById('cm-deadline-nonlocal').value,
+        qf_level:document.getElementById('cm-qf').value,
+        qr_number:document.getElementById('cm-qr').value.trim(),
+        education_requirement:document.getElementById('cm-edu-req').value.trim(),
+        chinese_exempt:document.getElementById('cm-ch-exempt').checked?1:0,
+        chinese_dse:document.getElementById('cm-ch-dse').value.trim(),
+        chinese_gaokao:document.getElementById('cm-ch-gaokao').value.trim(),
+        chinese_hsk:document.getElementById('cm-ch-hsk').value.trim(),
+        chinese_other:document.getElementById('cm-ch-other').value.trim(),
+        english_exempt:document.getElementById('cm-en-exempt').checked?1:0,
+        english_dse:document.getElementById('cm-en-dse').value.trim(),
+        english_gaokao:document.getElementById('cm-en-gaokao').value.trim(),
+        english_toefl_pbt:document.getElementById('cm-en-toefl-pbt').value.trim(),
+        english_toefl_ibt:document.getElementById('cm-en-toefl-ibt').value.trim(),
+        english_ielts:document.getElementById('cm-en-ielts').value.trim(),
+        english_cet4:document.getElementById('cm-en-cet4').value.trim(),
+        english_other:document.getElementById('cm-en-other').value.trim(),
+        other_requirements:document.getElementById('cm-other-req').value.trim(),
+        interview_required:document.getElementById('cm-interview').value==='1'?1:0,
+        course_description:document.getElementById('cm-desc').value.trim(),
+        course_page_url:document.getElementById('cm-page-url').value.trim(),
+        course_brochure_url:document.getElementById('cm-brochure-url').value.trim()
+    };
+    if(!data.school_id||!data.subject_category||!data.course_name_cn||!data.teaching_mode||!data.study_mode||!data.teaching_language||!data.academic_year||!data.student_identity){
+        toast('请填写所有必填字段','error');return;
+    }
+    if(eid){
+        const c=DB.courses.find(x=>x.id===parseInt(eid));if(!c)return;
+        const changes={};
+        for(const[k,v]of Object.entries(data)){
+            const ck=k.replace('chinese_','chinese_').replace('english_','english_'); // handle field name mapping
+            if(c[k]!==v)changes[k]={old:c[k],new:v};
+        }
+        Object.assign(c,data);
+        addAudit('courses',c.id,c.course_name_cn+' ('+c.course_code+')','UPDATE',changes);
+        toast('课程修改成功');
+    }else{
+        const nc={id:DB.courses.length?Math.max(...DB.courses.map(x=>x.id))+1:1,course_code:newCourseCode(),...data};
+        DB.courses.push(nc);
+        addAudit('courses',nc.id,nc.course_name_cn+' ('+nc.course_code+')','CREATE',data);
+        toast('课程添加成功');
+    }
+    saveDB();closeModal('cm-overlay');renderCourses();
+}
+function editCourse(id){openCourseModal(id)}
+function deleteCourse(id){
+    const c=DB.courses.find(x=>x.id===id);if(!c)return;
+    if(!confirm('确定删除课程「'+c.course_name_cn+'」吗？此操作不可恢复。'))return;
+    const od={...c};
+    DB.courses=DB.courses.filter(x=>x.id!==id);
+    addAudit('courses',id,od.course_name_cn+' ('+od.course_code+')','DELETE',od);
+    saveDB();renderCourses();toast('课程已删除');
+}
+
+// ==================== COURSE DETAIL ====================
+function viewDetail(id){
+    const c=DB.courses.find(x=>x.id===id);if(!c)return;
+    const s=getSchool(c.school_id);
+    const tl=c.tuition_local?'HKD'+Number(c.tuition_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
+    const tn=c.tuition_non_local?'HKD'+Number(c.tuition_non_local).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
+    const dl=c.deadline_local?fmtDate(c.deadline_local):'—';
+    const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):'—';
+    let dur='—';
+    if(c.study_mode==='全日制/非全日制')dur=(c.study_duration_ft?c.study_duration_ft+'年':'—')+' / '+(c.study_duration_pt?c.study_duration_pt+'年':'—');
+    else if(c.study_mode==='仅全日制')dur=c.study_duration_ft?c.study_duration_ft+'年':'—';
+    else dur=c.study_duration_pt?c.study_duration_pt+'年':'—';
+
+    document.getElementById('dm-body').innerHTML=`
+<div class="detail-section"><h4>📌 课程概要</h4></div>
+<div class="detail-grid">
+<div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${s?s.name_cn+'（'+s.name_en+'）':'—'}</div></div>
+<div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge badge-info">${esc(c.subject_category)}</span></div></div>
+<div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value">${esc(c.teaching_mode)}</div></div>
+<div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${esc(c.study_mode)}</div></div>
+<div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${dur}</div></div>
+<div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${esc(c.academic_year)}</div></div>
+<div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${esc(c.student_identity)}</div></div>
+<div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${esc(c.teaching_language)}</div></div>
+<div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level||'—'}</div></div>
+<div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number||'—'}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">学费（港币）</div><div class="detail-value">${tl} / ${tn}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">截止报名</div><div class="detail-value">${dl}（本地生）/ ${dn}（非本地生）</div></div>
+</div>
+<div class="detail-section"><h4>📝 报读要求</h4></div>
+<div class="detail-grid">
+<div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement||'—'}</div></div>
+</div>
+<div class="detail-grid" style="margin-top:8px">
+<div class="detail-item"><div class="detail-label"><strong>中文要求</strong></div><div class="detail-value" style="font-size:13px">
+${c.chinese_exempt?'✅ 持有以中文授课的认可学位免试：<strong>适用</strong><br>':'❌ 持有以中文授课的认可学位免试：<strong>不适用</strong><br>'}
+${c.chinese_dse?'② DSE：'+esc(c.chinese_dse)+'级<br>':''}
+${c.chinese_gaokao?'③ 高考：'+esc(c.chinese_gaokao)+'分<br>':''}
+${c.chinese_hsk?'④ HSK：'+esc(c.chinese_hsk)+'级<br>':''}
+${c.chinese_other?'⑤ 其他：'+esc(c.chinese_other):''}
+${!c.chinese_dse&&!c.chinese_gaokao&&!c.chinese_hsk&&!c.chinese_other?'（未设置）':''}
+</div></div>
+<div class="detail-item"><div class="detail-label"><strong>英文要求</strong></div><div class="detail-value" style="font-size:13px">
+${c.english_exempt?'✅ 持有以英文授课的认可学位免试：<strong>适用</strong><br>':'❌ 持有以英文授课的认可学位免试：<strong>不适用</strong><br>'}
+${c.english_dse?'② DSE：'+esc(c.english_dse)+'级<br>':''}
+${c.english_gaokao?'③ 高考：'+esc(c.english_gaokao)+'分<br>':''}
+${c.english_toefl_pbt?'④ TOEFL笔考：'+esc(c.english_toefl_pbt)+'分<br>':''}
+${c.english_toefl_ibt?'④ TOEFL网考：'+esc(c.english_toefl_ibt)+'分<br>':''}
+${c.english_ielts?'⑤ IELTS：'+esc(c.english_ielts)+'分<br>':''}
+${c.english_cet4?'⑥ CET-4：'+esc(c.english_cet4)+'分<br>':''}
+${c.english_other?'⑦ 其他：'+esc(c.english_other):''}
+${!c.english_dse&&!c.english_gaokao&&!c.english_toefl_pbt&&!c.english_toefl_ibt&&!c.english_ielts&&!c.english_cet4&&!c.english_other?'（未设置）':''}
+</div></div>
+<div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements||'—'}</div></div>
+<div class="detail-item"><div class="detail-label">面试要求</div><div class="detail-value">${c.interview_required?'✅ 需要':'❌ 不需要'}</div></div>
+</div>
+<div class="detail-section"><h4>📖 课程细节</h4></div>
+<div class="detail-grid">
+<div class="detail-item detail-full"><div class="detail-label">课程介绍</div><div class="detail-value">${c.course_description||'（暂无介绍）'}</div></div>
+<div class="detail-item"><div class="detail-label">课程主页</div><div class="detail-value">${c.course_page_url?'<a href="'+esc(c.course_page_url)+'" target="_blank" class="clickable">🔗 '+esc(c.course_page_url)+'</a>':'—'}</div></div>
+<div class="detail-item"><div class="detail-label">课程简章</div><div class="detail-value">${c.course_brochure_url?'<a href="'+esc(c.course_brochure_url)+'" target="_blank" class="clickable">🔗 '+esc(c.course_brochure_url)+'</a>':'—'}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">学校官网</div><div class="detail-value">${s&&s.website?'<a href="'+esc(s.website)+'" target="_blank" class="clickable">🔗 '+esc(s.website)+'</a>':'—'}</div></div>
+</div>`;
+    openModal('dm-overlay');
+}
+
+// ==================== AUDIT LOG ====================
+function renderAuditLog(){
+    const filter=document.getElementById('audit-filter').value;
+    let logs=filter?DB.auditLog.filter(l=>l.table_name===filter):[...DB.auditLog];
+    logs.reverse();
+    const tbody=document.getElementById('audit-tbody');
+    if(!logs.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="icon">📋</div><p>暂无操作记录</p></div></td></tr>';return}
+    const al={'CREATE':'新增','UPDATE':'修改','DELETE':'删除'};
+    const tl={'schools':'学校','courses':'课程'};
+    const fn={'name_cn':'学校名称(中)','abbreviation':'简称','name_en':'学校名称(英)','website':'网站',
+        'course_name_cn':'课程名称','course_name_en':'英文简称','subject_category':'学科分类',
+        'teaching_mode':'授课方式','study_mode':'学制','teaching_language':'授课语言',
+        'academic_year':'学年','student_identity':'身份','tuition_local':'学费(本地)',
+        'tuition_non_local':'学费(非本地)','deadline_local':'截止(本地)','deadline_non_local':'截止(非本地)',
+        'study_duration_ft':'全日制修读时间','study_duration_pt':'非全日制修读时间',
+        'chinese_exempt':'中文免试','english_exempt':'英文免试','interview_required':'面试要求',
+        'qf_level':'资历架构','qr_number':'资历登记号','course_page_url':'课程主页','course_brochure_url':'课程简章'};
+    tbody.innerHTML=logs.map(l=>{
+        let ch='';
+        if(l.action==='UPDATE'&&l.changes&&Object.keys(l.changes).length>0){
+            ch='<div class="changes-detail">'+Object.entries(l.changes).map(([k,v])=>{
+                const f=fn[k]||k;
+                const ov=typeof v.old==='boolean'?(v.old?'是':'否'):(v.old||'(空)');
+                const nv=typeof v.new==='boolean'?(v.new?'是':'否'):(v.new||'(空)');
+                return '<div class="change-row"><span class="field">'+f+'</span>: '+ov+' → '+nv+'</div>';
+            }).join('')+'</div>';
+        }else if(l.action==='CREATE')ch='<span style="color:#27ae60;font-size:12px">新建记录</span>';
+        else if(l.action==='DELETE')ch='<span style="color:#e74c3c;font-size:12px">已删除</span>';
+        return `<tr>
+<td><span class="audit-action ${l.action.toLowerCase()}">${al[l.action]||l.action}</span></td>
+<td>${tl[l.table_name]||l.table_name}</td>
+<td><strong>${esc(l.record_name||'—')}</strong></td>
+<td>${ch}</td>
+<td>${l.modified_date}</td><td>${l.modified_time}</td></tr>`;
+    }).join('');
+}
+
+// ==================== UTILS ====================
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fmtDate(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+
+// ==================== INIT ====================
+loadDB();
+switchTab('schools');
+</script>
+</body>
+</html>
