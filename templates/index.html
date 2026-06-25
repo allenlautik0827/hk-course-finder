@@ -381,10 +381,11 @@
         <div class="panel">
             <div class="panel-header">
                 <h3>🔍 课程筛选</h3>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                     <button class="btn btn-outline" onclick="downloadTemplate()">📥 下载模板</button>
                     <button class="btn btn-success" onclick="document.getElementById('excel-file-input').click()">📂 导入Excel</button>
                     <button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button>
+                    <button class="btn btn-danger" onclick="clearAllCourses()">🗑 清空全部</button>
                     <span style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;margin-left:4px;">☁️ 云端已同步</span>
                 </div>
             </div>
@@ -746,6 +747,23 @@
     </div>
 </div>
 
+<!-- Confirm Dialog Modal -->
+<div class="modal-overlay" id="confirm-modal-overlay" onclick="if(event.target===this)closeConfirmModal()">
+    <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+            <h2 id="confirm-title">⚠️ 确认操作</h2>
+            <button class="modal-close" onclick="closeConfirmModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirm-message" style="font-size:15px;line-height:1.8;white-space:pre-line;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeConfirmModal()">取消</button>
+            <button class="btn btn-danger" id="confirm-ok-btn">确认</button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast Container -->
 <div class="toast-container" id="toast-container"></div>
 
@@ -818,6 +836,24 @@ function formatDate(dateStr) {
 function formatCurrency(val) {
     if (!val && val !== 0) return '-';
     return 'HKD' + Number(val).toLocaleString('en-US');
+}
+
+// Custom confirm dialog (replaces native confirm() which is blocked in sandboxed browsers)
+function customConfirm(message, onConfirm, title) {
+    document.getElementById('confirm-title').textContent = title || '⚠️ 确认操作';
+    document.getElementById('confirm-message').textContent = message;
+    const btn = document.getElementById('confirm-ok-btn');
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.onclick = function() {
+        closeConfirmModal();
+        if (onConfirm) onConfirm();
+    };
+    document.getElementById('confirm-modal-overlay').classList.add('show');
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirm-modal-overlay').classList.remove('show');
 }
 
 // ============================================================
@@ -928,14 +964,15 @@ async function saveSchool() {
 function editSchool(id) { openSchoolModal(id); }
 
 async function deleteSchool(id, name) {
-    if (!confirm(`确定要删除学校「${name}」吗？\n\n此操作将同时删除该校的所有课程，且不可恢复。`)) return;
-    try {
-        await apiFetch(`${API}/schools/${id}`, { method: 'DELETE' });
-        toast('学校已删除');
-        loadSchools();
-    } catch (e) {
-        toast('删除失败: ' + e.message, 'error');
-    }
+    customConfirm(`确定要删除学校「${name}」吗？\n\n此操作将同时删除该校的所有课程，且不可恢复。`, async function() {
+        try {
+            await apiFetch(`${API}/schools/${id}`, { method: 'DELETE' });
+            toast('学校已删除');
+            loadSchools();
+        } catch (e) {
+            toast('删除失败: ' + e.message, 'error');
+        }
+    }, '🗑 删除学校');
 }
 
 // ============================================================
@@ -1216,14 +1253,32 @@ async function saveCourse() {
 function editCourse(id) { openCourseModal(id); }
 
 async function deleteCourse(id, name) {
-    if (!confirm(`确定要删除课程「${name}」吗？此操作不可恢复。`)) return;
-    try {
-        await apiFetch(`${API}/courses/${id}`, { method: 'DELETE' });
-        toast('课程已删除');
+    customConfirm(`确定要删除课程「${name}」吗？\n\n此操作不可恢复。`, async function() {
+        try {
+            await apiFetch(`${API}/courses/${id}`, { method: 'DELETE' });
+            toast('课程已删除');
+            filterCourses();
+        } catch (e) {
+            toast('删除失败: ' + e.message, 'error');
+        }
+    }, '🗑 删除课程');
+}
+
+async function clearAllCourses() {
+    if (allCourses.length === 0) { toast('没有课程可清空'); return; }
+    customConfirm(`确定清空全部 ${allCourses.length} 门课程吗？\n\n此操作不可恢复，请谨慎操作！`, async function() {
+        let success = 0, fail = 0;
+        for (const c of allCourses) {
+            try {
+                await apiFetch(`${API}/courses/${c.id}`, { method: 'DELETE' });
+                success++;
+            } catch (e) {
+                fail++;
+            }
+        }
+        toast(`已清空 ${success} 门课程${fail ? '，失败 ' + fail + ' 条' : ''}`, fail ? 'error' : 'success');
         filterCourses();
-    } catch (e) {
-        toast('删除失败: ' + e.message, 'error');
-    }
+    }, '🗑 清空全部课程');
 }
 
 // ============================================================

@@ -156,7 +156,7 @@ table tbody tr:hover{background:#f8fafd}
 <div id="tab-courses" class="tab-content">
 <div class="stats-row" id="course-stats"></div>
 <div class="panel">
-<div class="panel-header"><h3>🔍 课程筛选</h3><div style="display:flex;gap:8px;align-items:center;"><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button><button class="btn" style="background:#3498db;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="syncToCloud()" id="sync-btn">☁️ 同步到云端</button></div></div>
+<div class="panel-header"><h3>🔍 课程筛选</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button><button class="btn" style="background:#e74c3c;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="clearAllCourses()">🗑 清空全部</button><button class="btn" style="background:#3498db;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="syncToCloud()" id="sync-btn">☁️ 同步到云端</button></div></div>
 <div class="filter-bar">
 <div class="filter-group"><label>课程编号</label><input type="text" id="f-code" placeholder="输入编号…"></div>
 <div class="filter-group"><label>学校名称</label><select id="f-school"><option value="">全部学校</option></select></div>
@@ -192,6 +192,16 @@ table tbody tr:hover{background:#f8fafd}
 </tr></thead><tbody id="audit-tbody"></tbody></table></div></div>
 </div></div>
 </div>
+
+<!-- Confirm Dialog Modal -->
+<div class="modal-overlay" id="cf-overlay" onclick="if(event.target===this)closeModal('cf-overlay')">
+<div class="modal" style="max-width:420px">
+<div class="modal-header"><h2 id="cf-title">⚠️ 确认操作</h2><button class="modal-close" onclick="closeModal('cf-overlay')">✕</button></div>
+<div class="modal-body"><p id="cf-message" style="font-size:15px;line-height:1.8;white-space:pre-line"></p></div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal('cf-overlay')">取消</button>
+<button class="btn btn-danger" id="cf-confirm-btn">确认</button>
+</div></div></div>
 
 <!-- School Modal -->
 <div class="modal-overlay" id="sm-overlay"><div class="modal">
@@ -422,12 +432,13 @@ function saveSchool(){
 function editSchool(id){openSchoolModal(id)}
 function deleteSchool(id){
     const s=getSchool(id);if(!s)return;
-    if(!confirm('确定删除学校「'+s.name_cn+'」吗？\n\n此操作将同时删除该校所有课程，不可恢复。'))return;
-    const oldData={...s};
-    DB.courses=DB.courses.filter(c=>c.school_id!==id);
-    DB.schools=DB.schools.filter(x=>x.id!==id);
-    addAudit('schools',id,oldData.name_cn,'DELETE',oldData);
-    saveDB();renderSchools();toast('学校已删除');
+    customConfirm('确定删除学校「'+s.name_cn+'」吗？\n\n此操作将同时删除该校所有课程，不可恢复。', function(){
+        const oldData={...s};
+        DB.courses=DB.courses.filter(c=>c.school_id!==id);
+        DB.schools=DB.schools.filter(x=>x.id!==id);
+        addAudit('schools',id,oldData.name_cn,'DELETE',oldData);
+        saveDB();renderSchools();toast('学校已删除');
+    }, '🗑 删除学校');
 }
 
 // ==================== COURSES ====================
@@ -630,11 +641,22 @@ function saveCourse(){
 function editCourse(id){openCourseModal(id)}
 function deleteCourse(id){
     const c=DB.courses.find(x=>x.id===id);if(!c)return;
-    if(!confirm('确定删除课程「'+c.course_name_cn+'」吗？此操作不可恢复。'))return;
-    const od={...c};
-    DB.courses=DB.courses.filter(x=>x.id!==id);
-    addAudit('courses',id,od.course_name_cn+' ('+od.course_code+')','DELETE',od);
-    saveDB();renderCourses();toast('课程已删除');
+    customConfirm('确定删除课程「'+c.course_name_cn+'」吗？\n\n此操作不可恢复。', function(){
+        const od={...c};
+        DB.courses=DB.courses.filter(x=>x.id!==id);
+        addAudit('courses',id,od.course_name_cn+' ('+od.course_code+')','DELETE',od);
+        saveDB();renderCourses();toast('课程已删除');
+    }, '🗑 删除课程');
+}
+function clearAllCourses(){
+    if(!DB.courses.length){toast('没有课程可清空');return}
+    customConfirm('确定清空全部 '+DB.courses.length+' 门课程吗？\n\n此操作不可恢复，请谨慎操作！', function(){
+        const count=DB.courses.length;
+        DB.auditLog.push({id:DB.auditLog.length+1,table_name:'courses',record_id:0,record_name:'全部课程',action:'DELETE',changes:{count:count},modified_by:'admin',modified_date:nowDate(),modified_time:nowTime()});
+        DB.courses=[];
+        DB.nextCourseNum=1;
+        saveDB();renderCourses();toast('已清空 '+count+' 门课程');
+    }, '🗑 清空全部课程');
 }
 
 // ==================== COURSE DETAIL ====================
@@ -743,6 +765,21 @@ function renderAuditLog(){
 // ==================== UTILS ====================
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function fmtDate(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+
+// ==================== CUSTOM CONFIRM ====================
+function customConfirm(message, onConfirm, title){
+    document.getElementById('cf-title').textContent = title || '⚠️ 确认操作';
+    document.getElementById('cf-message').textContent = message;
+    const btn = document.getElementById('cf-confirm-btn');
+    // Clone to remove old listeners
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.onclick = function(){
+        closeModal('cf-overlay');
+        if(onConfirm) onConfirm();
+    };
+    openModal('cf-overlay');
+}
 
 // ==================== CLOUD SYNC ====================
 const CLOUD_API = 'https://hk-course-finder.onrender.com';
