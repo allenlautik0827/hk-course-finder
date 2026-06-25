@@ -759,8 +759,8 @@ async function syncToCloud(){
             body:JSON.stringify({courses:DB.courses, modified_by:'sync'})
         });
         const r=await resp.json();
-        if(r.success>0) toast(`✅ 同步成功！${r.success}条课程已上传${r.skipped?', '+r.skiped+'条跳过':''}${r.failed?', '+r.failed+'条失败':'')}`);
-        else toast('同步完成：'+r.message||'无新课程需要同步');
+        if(r.success>0) toast(`✅ 同步成功！${r.success}条课程已上传${r.skipped?', '+r.skipped+'条跳过':''}${r.failed?', '+r.failed+'条失败':''}`);
+        else toast('同步完成：'+(r.message||'无新课程需要同步'));
         if(r.errors&&r.errors.length) console.warn('同步错误:',r.errors);
     }catch(e){
         toast('❌ 同步失败：'+e.message,'error');

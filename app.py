@@ -504,18 +504,43 @@ def batch_sync_courses():
     """批量同步课程（用于 localStorage 版本向服务器同步数据）"""
     data = request.json
     courses = data.get('courses', [])
+    modified_by = data.get('modified_by', 'sync')
     if not courses:
         return jsonify({'error': '没有课程数据'}), 400
 
     db = get_db()
     results = {'success': 0, 'skipped': 0, 'failed': 0, 'errors': []}
 
+    # 获取当前最大课程编号
+    last_code_row = db.execute("SELECT course_code FROM courses ORDER BY id DESC LIMIT 1").fetchone()
+    if last_code_row and last_code_row['course_code']:
+        try:
+            last_num = int(last_code_row['course_code'].replace('HK-', ''))
+        except ValueError:
+            last_num = 0
+    else:
+        last_num = 0
+
     for idx, course in enumerate(courses):
         try:
-            # 检查课程是否已存在（通过名称匹配）
+            # school_id 转为整数
+            school_id = int(course.get('school_id', 0))
+            if not school_id:
+                results['failed'] += 1
+                results['errors'].append(f"第{idx+1}行: 缺少 school_id")
+                continue
+
+            # 验证学校是否存在
+            school = db.execute("SELECT id FROM schools WHERE id = ?", (school_id,)).fetchone()
+            if not school:
+                results['failed'] += 1
+                results['errors'].append(f"第{idx+1}行: school_id={school_id} 不存在")
+                continue
+
+            # 检查课程是否已存在（通过名称+学校匹配）
             existing = db.execute(
                 "SELECT id FROM courses WHERE course_name_cn = ? AND school_id = ?",
-                (course.get('course_name_cn', ''), course.get('school_id', 0))
+                (course.get('course_name_cn', ''), school_id)
             ).fetchone()
 
             if existing:
@@ -523,30 +548,79 @@ def batch_sync_courses():
                 continue
 
             # 生成新编号
-            last_num = db.execute("SELECT MAX(id) FROM courses").fetchone()[0] or 0
-            new_code = f"HK-{last_num + 1 + idx:04d}"
+            last_num += 1
+            new_code = f"HK-{last_num:04d}"
 
-            # 插入课程
-            fields = ['course_code','school_id','subject_category','course_name_cn',
-                      'course_name_en','teaching_mode','study_mode','study_duration_ft',
-                      'study_duration_pt','teaching_language','academic_year',
-                      'student_identity','tuition_local','tuition_non_local',
-                      'deadline_local','deadline_non_local','qf_level','qr_number',
-                      'education_requirement','chinese_exempt','chinese_dse',
-                      'chinese_gaokao','chinese_hsk','chinese_other',
-                      'english_exempt','english_dse','english_gaokao',
-                      'english_toefl_pbt','english_toefl_ibt','english_ielts',
-                      'english_cet4','english_other','other_requirements',
-                      'interview_required','course_description','course_page_url',
-                      'course_brochure_url']
-            values = [new_code] + [course.get(f, '') for f in fields[1:]]
-            placeholders = ','.join(['?'] * len(values))
-            db.execute(f"INSERT INTO courses ({','.join(fields)}) VALUES ({placeholders})", values)
+            # 插入课程（确保类型正确）
+            def get_str(field):
+                v = course.get(field, '')
+                return str(v) if v is not None else ''
 
-            log_audit('courses', db.execute('SELECT last_insert_rowid()').fetchone()[0],
+            def get_num(field):
+                v = course.get(field)
+                if v is None or v == '':
+                    return 0
+                try:
+                    return float(v)
+                except (ValueError, TypeError):
+                    return 0
+
+            def get_num_nullable(field):
+                v = course.get(field)
+                if v is None or v == '':
+                    return None
+                try:
+                    return float(v)
+                except (ValueError, TypeError):
+                    return None
+
+            def get_bool(field):
+                v = course.get(field)
+                if isinstance(v, bool):
+                    return 1 if v else 0
+                if isinstance(v, (int, float)):
+                    return 1 if v else 0
+                if isinstance(v, str):
+                    return 1 if v.lower() in ('1', 'true', 'yes', '是') else 0
+                return 0
+
+            db.execute("""
+                INSERT INTO courses (
+                    course_code, school_id, subject_category, course_name_cn, course_name_en,
+                    teaching_mode, study_mode, study_duration_ft, study_duration_pt,
+                    teaching_language, academic_year, student_identity,
+                    tuition_local, tuition_non_local, deadline_local, deadline_non_local,
+                    qf_level, qr_number, education_requirement,
+                    chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
+                    english_exempt, english_dse, english_gaokao, english_toefl_pbt,
+                    english_toefl_ibt, english_ielts, english_cet4, english_other,
+                    other_requirements, interview_required,
+                    course_description, course_page_url, course_brochure_url
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                new_code, school_id,
+                get_str('subject_category'), get_str('course_name_cn'), get_str('course_name_en'),
+                get_str('teaching_mode'), get_str('study_mode'),
+                get_num_nullable('study_duration_ft'), get_num_nullable('study_duration_pt'),
+                get_str('teaching_language'), get_str('academic_year'), get_str('student_identity'),
+                get_num('tuition_local'), get_num('tuition_non_local'),
+                get_str('deadline_local'), get_str('deadline_non_local'),
+                get_str('qf_level'), get_str('qr_number'), get_str('education_requirement'),
+                get_bool('chinese_exempt'), get_str('chinese_dse'), get_str('chinese_gaokao'),
+                get_str('chinese_hsk'), get_str('chinese_other'),
+                get_bool('english_exempt'), get_str('english_dse'), get_str('english_gaokao'),
+                get_str('english_toefl_pbt'), get_str('english_toefl_ibt'),
+                get_str('english_ielts'), get_str('english_cet4'), get_str('english_other'),
+                get_str('other_requirements'), get_bool('interview_required'),
+                get_str('course_description'), get_str('course_page_url'), get_str('course_brochure_url')
+            ))
+
+            course_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+            log_audit('courses', course_id,
                       f"{course.get('course_name_cn', '')} ({new_code})",
-                      'BATCH_SYNC', f"从本地同步: {json.dumps(course, ensure_ascii=False)[:200]}",
-                      course.get('modified_by', 'sync'))
+                      'BATCH_SYNC',
+                      {'sync_source': 'localStorage', 'course_name': course.get('course_name_cn', '')},
+                      modified_by)
             results['success'] += 1
 
         except Exception as e:
@@ -712,12 +786,16 @@ def get_audit_log():
     return jsonify(result)
 
 # ============================================================
+# 数据库初始化（模块级别，确保 gunicorn 也能执行）
+# ============================================================
+init_db()
+seed_schools()
+
+# ============================================================
 # 应用入口
 # ============================================================
 
 if __name__ == '__main__':
-    init_db()
-    seed_schools()
     port = int(os.environ.get('PORT', 5000))
     host = os.environ.get('HOST', '0.0.0.0')
     print("=" * 60)
