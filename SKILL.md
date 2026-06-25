@@ -52,7 +52,12 @@ https://9e30d306f6d2474c8cb7d5b3094ab36d.app.codebuddy.work/hk-course-finder.htm
 
 ## 备选方案
 
-如需后端数据库支持（多用户、大量数据），可使用 Flask 版本：
+如需后端数据库支持（多用户、多设备共享数据），可使用 Flask 版本部署到云平台：
+
 ```bash
+# 本地运行
 cd /Users/allenlautik/WorkBuddy/2026-06-25-21-17-17/hk-course-finder && /Users/allenlautik/.workbuddy/binaries/python/envs/hk-course-finder/bin/python app.py
+
+# Railway 一键部署（推荐，免费）
+# 详见 DEPLOY.md
 ```

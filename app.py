@@ -662,5 +662,4 @@ if __name__ == '__main__':
     print("  香港留学课程检索系统 - HK Course Finder")
     print(f"  访问地址: http://{host}:{port}")
     print("=" * 60)
-    from waitress import serve
-    serve(app, host=host, port=port, threads=4)
+    app.run(host=host, port=port, debug=False)
