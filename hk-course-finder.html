@@ -156,7 +156,8 @@ table tbody tr:hover{background:#f8fafd}
 <div id="tab-courses" class="tab-content">
 <div class="stats-row" id="course-stats"></div>
 <div class="panel">
-<div class="panel-header"><h3>🔍 课程筛选</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button><button class="btn" style="background:#e74c3c;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="clearAllCourses()">🗑 清空全部</button><button class="btn" style="background:#3498db;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="syncToCloud()" id="sync-btn">☁️ 同步到云端</button></div></div>
+<div class="panel-header"><h3>🔍 课程筛选</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn btn-outline" onclick="downloadTemplate()">📥 下载模板</button><button class="btn btn-success" onclick="document.getElementById('excel-file-input').click()">📂 导入Excel</button><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button><button class="btn btn-danger" onclick="clearAllCourses()">🗑 清空全部</button><button class="btn" style="background:#3498db;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="syncToCloud()" id="sync-btn">☁️ 同步到云端</button></div></div>
+<input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event)">
 <div class="filter-bar">
 <div class="filter-group"><label>课程编号</label><input type="text" id="f-code" placeholder="输入编号…"></div>
 <div class="filter-group"><label>学校名称</label><select id="f-school"><option value="">全部学校</option></select></div>
@@ -286,7 +287,31 @@ table tbody tr:hover{background:#f8fafd}
 <div class="modal-header"><h2>📖 课程详情</h2><button class="modal-close" onclick="closeModal('dm-overlay')">✕</button></div>
 <div class="modal-body" id="dm-body"></div></div></div>
 
+<!-- Import Modal -->
+<div class="modal-overlay" id="im-overlay" onclick="if(event.target===this)closeImportModal()">
+<div class="modal wide">
+<div class="modal-header"><h2>📂 Excel 导入预览</h2><button class="modal-close" onclick="closeImportModal()">✕</button></div>
+<div class="modal-body">
+<div id="import-summary" style="margin-bottom:16px;"></div>
+<div id="import-errors" style="display:none;margin-bottom:16px;padding:12px 16px;background:#fdecea;border-radius:8px;font-size:13px;color:var(--danger);"></div>
+<div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
+<table style="font-size:12px;">
+<thead id="import-preview-thead"></thead>
+<tbody id="import-preview-tbody"></tbody>
+</table>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeImportModal()">取消</button>
+<button class="btn btn-success" id="confirm-import-btn" onclick="confirmImport()">✅ 确认导入</button>
+</div>
+</div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
+
+<!-- SheetJS Library -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
 <script>
 // ==================== DATA LAYER ====================
@@ -804,6 +829,238 @@ async function syncToCloud(){
         console.error('Sync error:',e);
     }
     btn.disabled=false;btn.innerHTML=orig;
+}
+
+// ==================== EXCEL IMPORT ====================
+const EXCEL_COLUMN_MAP = {
+    '学校简称':'school_abbreviation','学校名称':'school_abbreviation','简称':'school_abbreviation',
+    '学科分类':'subject_category','学科':'subject_category',
+    '课程名称（中文）':'course_name_cn','课程名称(中文)':'course_name_cn','课程名称':'course_name_cn',
+    '课程名称（英文）':'course_name_en','课程名称(英文)':'course_name_en','英文简称':'course_name_en',
+    '授课方式':'teaching_mode',
+    '学制':'study_mode',
+    '授课语言':'teaching_language',
+    '全日制修读时间':'study_duration_ft','全日制修读时间（年）':'study_duration_ft',
+    '非全日制修读时间':'study_duration_pt','非全日制修读时间（年）':'study_duration_pt',
+    '学年':'academic_year',
+    '身份':'student_identity',
+    '学费（本地生）':'tuition_local','学费-本地生':'tuition_local','学费(本地生)':'tuition_local','学费本地':'tuition_local',
+    '学费（非本地生）':'tuition_non_local','学费-非本地生':'tuition_non_local','学费(非本地生)':'tuition_non_local','学费非本地':'tuition_non_local',
+    '截止报名（本地生）':'deadline_local','截止报名-本地生':'deadline_local','截止(本地生)':'deadline_local','截止本地':'deadline_local',
+    '截止报名（非本地生）':'deadline_non_local','截止报名-非本地生':'deadline_non_local','截止(非本地生)':'deadline_non_local','截止非本地':'deadline_non_local',
+    '资历架构':'qf_level',
+    '资历名册登记号码':'qr_number',
+    '学历要求':'education_requirement',
+    '中文免试':'chinese_exempt','中文DSE':'chinese_dse','中文高考':'chinese_gaokao','中文HSK':'chinese_hsk','中文其他':'chinese_other',
+    '英文免试':'english_exempt','英文DSE':'english_dse','英文高考':'english_gaokao',
+    'TOEFL笔考':'english_toefl_pbt','TOEFL网考':'english_toefl_ibt','IELTS':'english_ielts','CET-4':'english_cet4','英文其他':'english_other',
+    '其他要求':'other_requirements',
+    '面试要求':'interview_required',
+    '课程介绍':'course_description',
+    '课程主页':'course_page_url',
+    '课程简章':'course_brochure_url',
+};
+const REQUIRED_FIELDS = ['school_abbreviation','subject_category','course_name_cn','teaching_mode','study_mode','teaching_language','academic_year','student_identity'];
+
+function downloadTemplate() {
+    const templateData = [
+        {
+            '学校简称':'HKU','学科分类':'商科','课程名称（中文）':'金融学硕士','课程名称（英文）':'MFin',
+            '授课方式':'授课式','学制':'全日制/非全日制','授课语言':'英语',
+            '全日制修读时间':1,'非全日制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
+            '学费（本地生）':150000,'学费（非本地生）':300000,
+            '截止报名（本地生）':'2027-01-31','截止报名（非本地生）':'2026-12-31',
+            '资历架构':'QF Level 6','资历名册登记号码':'QR123456','学历要求':'持有认可学士学位',
+            '中文免试':'否','中文DSE':'','中文高考':'','中文HSK':'','中文其他':'',
+            '英文免试':'否','英文DSE':'5','英文高考':'120','TOEFL笔考':'550','TOEFL网考':'80','IELTS':'6.5','CET-4':'','英文其他':'',
+            '其他要求':'有相关工作经验优先','面试要求':'需要',
+            '课程介绍':'本课程旨在培养金融专业人才…','课程主页':'https://www.hku.hk/mfin','课程简章':'https://www.hku.hk/mfin/brochure.pdf',
+        },
+        {
+            '学校简称':'CUHK','学科分类':'工科','课程名称（中文）':'计算机科学硕士','课程名称（英文）':'MSc CS',
+            '授课方式':'授课式','学制':'仅全日制','授课语言':'英语',
+            '全日制修读时间':1,'非全日制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
+            '学费（本地生）':120000,'学费（非本地生）':250000,
+            '截止报名（本地生）':'2027-02-28','截止报名（非本地生）':'2027-01-15',
+            '资历架构':'QF Level 6','资历名册登记号码':'QR789012','学历要求':'持有计算机或相关学科学士学位',
+            '中文免试':'是','中文DSE':'','中文高考':'','中文HSK':'','中文其他':'',
+            '英文免试':'否','英文DSE':'','英文高考':'','TOEFL笔考':'','TOEFL网考':'79','IELTS':'6.5','CET-4':'','英文其他':'',
+            '其他要求':'','面试要求':'不需要',
+            '课程介绍':'培养计算机科学高级人才…','课程主页':'https://www.cuhk.edu.hk/msc-cs','课程简章':'',
+        },
+    ];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    ws['!cols'] = Object.keys(templateData[0]).map(k => ({ wch: Math.max(k.length * 2, 12) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '课程导入模板');
+    XLSX.writeFile(wb, '课程导入模板.xlsx');
+    toast('模板已下载，请按格式填写后导入');
+}
+
+async function handleExcelUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    event.target.value = '';
+
+    try {
+        const data = await file.arrayBuffer();
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+        if (rows.length === 0) { toast('Excel 文件中没有数据', 'error'); return; }
+
+        const schoolMap = {};
+        DB.schools.forEach(s => {
+            schoolMap[s.abbreviation.toUpperCase()] = s.id;
+            schoolMap[s.name_cn] = s.id;
+        });
+
+        const parsedRows = [];
+        const errors = [];
+
+        rows.forEach((row, idx) => {
+            const course = {};
+            let hasAnyData = false;
+            for (const [excelCol, value] of Object.entries(row)) {
+                const trimmedCol = excelCol.trim();
+                const fieldName = EXCEL_COLUMN_MAP[trimmedCol];
+                if (fieldName && value !== '') {
+                    course[fieldName] = String(value).trim();
+                    hasAnyData = true;
+                }
+            }
+            if (!hasAnyData) return;
+
+            if (course.school_abbreviation) {
+                const schoolId = schoolMap[course.school_abbreviation.toUpperCase()] || schoolMap[course.school_abbreviation];
+                if (schoolId) { course.school_id = schoolId; }
+                else { errors.push('第 ' + (idx + 2) + ' 行：找不到学校「' + course.school_abbreviation + '」'); }
+            }
+
+            if (course.tuition_local) course.tuition_local = parseFloat(course.tuition_local) || 0;
+            if (course.tuition_non_local) course.tuition_non_local = parseFloat(course.tuition_non_local) || 0;
+            if (course.study_duration_ft) course.study_duration_ft = parseFloat(course.study_duration_ft) || null;
+            if (course.study_duration_pt) course.study_duration_pt = parseFloat(course.study_duration_pt) || null;
+
+            if (course.chinese_exempt) course.chinese_exempt = ['是','适用','true','1','yes'].includes(course.chinese_exempt.toLowerCase()) ? 1 : 0;
+            if (course.english_exempt) course.english_exempt = ['是','适用','true','1','yes'].includes(course.english_exempt.toLowerCase()) ? 1 : 0;
+            if (course.interview_required) course.interview_required = ['需要','是','true','1','yes'].includes(course.interview_required.toLowerCase()) ? 1 : 0;
+
+            const missingFields = REQUIRED_FIELDS.filter(f => !course[f] && course[f] !== 0);
+            if (missingFields.length > 0) {
+                const fieldLabels = {
+                    'school_abbreviation':'学校简称','subject_category':'学科分类',
+                    'course_name_cn':'课程名称','teaching_mode':'授课方式',
+                    'study_mode':'学制','teaching_language':'授课语言',
+                    'academic_year':'学年','student_identity':'身份',
+                };
+                const missingLabels = missingFields.map(f => fieldLabels[f] || f).join('、');
+                errors.push('第 ' + (idx + 2) + ' 行：缺少必填字段 ' + missingLabels);
+            }
+
+            course._rowNum = idx + 2;
+            course._valid = missingFields.length === 0 && course.school_id;
+            parsedRows.push(course);
+        });
+
+        showImportPreview(parsedRows, errors);
+    } catch (e) {
+        toast('解析 Excel 失败: ' + e.message, 'error');
+    }
+}
+
+function showImportPreview(rows, errors) {
+    const validRows = rows.filter(r => r._valid);
+    const invalidCount = rows.length - validRows.length;
+
+    document.getElementById('import-summary').innerHTML =
+        '<div style="display:flex;gap:16px;align-items:center;">' +
+        '<div style="font-size:15px;font-weight:600;">共解析 <span style="color:var(--primary);">' + rows.length + '</span> 行数据</div>' +
+        '<div style="font-size:14px;color:var(--success);">✅ 可导入: ' + validRows.length + ' 条</div>' +
+        (invalidCount > 0 ? '<div style="font-size:14px;color:var(--danger);">❌ 有问题: ' + invalidCount + ' 条</div>' : '') +
+        '</div>';
+
+    const errDiv = document.getElementById('import-errors');
+    if (errors.length > 0) {
+        errDiv.style.display = 'block';
+        errDiv.innerHTML = '<strong>⚠️ 以下行存在问题（将跳过不导入）：</strong><br>' + errors.map(e => '• ' + e).join('<br>');
+    } else {
+        errDiv.style.display = 'none';
+    }
+
+    const displayFields = [
+        ['school_abbreviation','学校'],['subject_category','学科'],['course_name_cn','课程名称'],
+        ['teaching_mode','授课方式'],['study_mode','学制'],['teaching_language','语言'],
+        ['academic_year','学年'],['student_identity','身份'],['tuition_local','学费(本地)'],
+        ['tuition_non_local','学费(非本地)'],
+    ];
+
+    document.getElementById('import-preview-thead').innerHTML =
+        '<tr>' + displayFields.map(function(f) { return '<th>' + f[1] + '</th>'; }).join('') + '<th>状态</th></tr>';
+
+    const tbody = document.getElementById('import-preview-tbody');
+    if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-secondary);">无数据</td></tr>';
+    } else {
+        tbody.innerHTML = rows.map(function(r) {
+            return '<tr style="' + (r._valid ? '' : 'background:#fef5f5;') + '">' +
+                displayFields.map(function(f) {
+                    var v = r[f[0]];
+                    return '<td>' + (v !== undefined && v !== '' ? esc(v) : '<span style="color:#ccc;">-</span>') + '</td>';
+                }).join('') +
+                '<td>' + (r._valid ? '<span class="badge badge-success">✅ 可导入</span>' : '<span class="badge badge-warning">⚠️ 跳过</span>') + '</td></tr>';
+        }).join('');
+    }
+
+    document.getElementById('confirm-import-btn').disabled = validRows.length === 0;
+    document.getElementById('confirm-import-btn').style.opacity = validRows.length === 0 ? '0.5' : '1';
+
+    window._importData = validRows;
+    document.getElementById('im-overlay').classList.add('show');
+}
+
+function closeImportModal() {
+    document.getElementById('im-overlay').classList.remove('show');
+    window._importData = null;
+}
+
+function confirmImport() {
+    const courses = window._importData;
+    if (!courses || courses.length === 0) return;
+
+    const btn = document.getElementById('confirm-import-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 导入中...';
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const course of courses) {
+        try {
+            const { _rowNum, _valid, school_abbreviation, ...courseData } = course;
+            const newId = DB.courses.length ? Math.max(...DB.courses.map(x => x.id)) + 1 : 1;
+            const nc = { id: newId, course_code: newCourseCode(), ...courseData };
+            DB.courses.push(nc);
+            addAudit('courses', nc.id, nc.course_name_cn + ' (' + nc.course_code + ')', 'CREATE', courseData);
+            successCount++;
+        } catch (e) {
+            failCount++;
+        }
+    }
+
+    saveDB();
+    btn.disabled = false;
+    btn.textContent = '✅ 确认导入';
+
+    if (failCount === 0) {
+        toast('成功导入 ' + successCount + ' 门课程！');
+        closeImportModal();
+        renderCourses();
+    } else {
+        toast('导入完成：成功 ' + successCount + ' 条，失败 ' + failCount + ' 条', 'error');
+        if (successCount > 0) { renderCourses(); }
+    }
 }
 
 // ==================== INIT ====================
