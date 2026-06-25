@@ -156,7 +156,7 @@ table tbody tr:hover{background:#f8fafd}
 <div id="tab-courses" class="tab-content">
 <div class="stats-row" id="course-stats"></div>
 <div class="panel">
-<div class="panel-header"><h3>🔍 课程筛选</h3><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button></div>
+<div class="panel-header"><h3>🔍 课程筛选</h3><div style="display:flex;gap:8px;align-items:center;"><button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button><button class="btn" style="background:#3498db;color:#fff;border:none;font-size:12px;padding:6px 14px;" onclick="syncToCloud()" id="sync-btn">☁️ 同步到云端</button></div></div>
 <div class="filter-bar">
 <div class="filter-group"><label>课程编号</label><input type="text" id="f-code" placeholder="输入编号…"></div>
 <div class="filter-group"><label>学校名称</label><select id="f-school"><option value="">全部学校</option></select></div>
@@ -743,6 +743,31 @@ function renderAuditLog(){
 // ==================== UTILS ====================
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function fmtDate(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+
+// ==================== CLOUD SYNC ====================
+const CLOUD_API = 'https://hk-course-finder.onrender.com';
+
+async function syncToCloud(){
+    const btn=document.getElementById('sync-btn');
+    const orig=btn.innerHTML;
+    if(!DB.courses.length){toast('没有本地课程可同步','error');return}
+    btn.disabled=true;btn.textContent='⏳ 同步中...';
+    try{
+        const resp=await fetch(CLOUD_API+'/api/courses/batch',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({courses:DB.courses, modified_by:'sync'})
+        });
+        const r=await resp.json();
+        if(r.success>0) toast(`✅ 同步成功！${r.success}条课程已上传${r.skipped?', '+r.skiped+'条跳过':''}${r.failed?', '+r.failed+'条失败':'')}`);
+        else toast('同步完成：'+r.message||'无新课程需要同步');
+        if(r.errors&&r.errors.length) console.warn('同步错误:',r.errors);
+    }catch(e){
+        toast('❌ 同步失败：'+e.message,'error');
+        console.error('Sync error:',e);
+    }
+    btn.disabled=false;btn.innerHTML=orig;
+}
 
 // ==================== INIT ====================
 loadDB();

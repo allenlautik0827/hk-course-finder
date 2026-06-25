@@ -10,9 +10,11 @@ import json
 import os
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, g
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hk-course-finder-2026'
+CORS(app)  # 允许跨域请求（支持 CloudStudio 等静态页面同步数据）
 
 # 数据库路径
 DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db'))
@@ -495,6 +497,66 @@ def add_course():
         return jsonify({'id': course_id, 'course_code': new_code, 'message': '课程添加成功'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+
+@app.route('/api/courses/batch', methods=['POST'])
+def batch_sync_courses():
+    """批量同步课程（用于 localStorage 版本向服务器同步数据）"""
+    data = request.json
+    courses = data.get('courses', [])
+    if not courses:
+        return jsonify({'error': '没有课程数据'}), 400
+
+    db = get_db()
+    results = {'success': 0, 'skipped': 0, 'failed': 0, 'errors': []}
+
+    for idx, course in enumerate(courses):
+        try:
+            # 检查课程是否已存在（通过名称匹配）
+            existing = db.execute(
+                "SELECT id FROM courses WHERE course_name_cn = ? AND school_id = ?",
+                (course.get('course_name_cn', ''), course.get('school_id', 0))
+            ).fetchone()
+
+            if existing:
+                results['skipped'] += 1
+                continue
+
+            # 生成新编号
+            last_num = db.execute("SELECT MAX(id) FROM courses").fetchone()[0] or 0
+            new_code = f"HK-{last_num + 1 + idx:04d}"
+
+            # 插入课程
+            fields = ['course_code','school_id','subject_category','course_name_cn',
+                      'course_name_en','teaching_mode','study_mode','study_duration_ft',
+                      'study_duration_pt','teaching_language','academic_year',
+                      'student_identity','tuition_local','tuition_non_local',
+                      'deadline_local','deadline_non_local','qf_level','qr_number',
+                      'education_requirement','chinese_exempt','chinese_dse',
+                      'chinese_gaokao','chinese_hsk','chinese_other',
+                      'english_exempt','english_dse','english_gaokao',
+                      'english_toefl_pbt','english_toefl_ibt','english_ielts',
+                      'english_cet4','english_other','other_requirements',
+                      'interview_required','course_description','course_page_url',
+                      'course_brochure_url']
+            values = [new_code] + [course.get(f, '') for f in fields[1:]]
+            placeholders = ','.join(['?'] * len(values))
+            db.execute(f"INSERT INTO courses ({','.join(fields)}) VALUES ({placeholders})", values)
+
+            log_audit('courses', db.execute('SELECT last_insert_rowid()').fetchone()[0],
+                      f"{course.get('course_name_cn', '')} ({new_code})",
+                      'BATCH_SYNC', f"从本地同步: {json.dumps(course, ensure_ascii=False)[:200]}",
+                      course.get('modified_by', 'sync'))
+            results['success'] += 1
+
+        except Exception as e:
+            results['failed'] += 1
+            results['errors'].append(f"第{idx+1}行: {str(e)}")
+
+    db.commit()
+    results['message'] = f"同步完成：成功 {results['success']} 条，跳过 {results['skipped']} 条，失败 {results['failed']} 条"
+    return jsonify(results), 200
+
 
 @app.route('/api/courses/<int:course_id>', methods=['PUT'])
 def update_course(course_id):
