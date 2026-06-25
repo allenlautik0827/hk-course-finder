@@ -471,6 +471,7 @@
                                 <th>课程编号</th>
                                 <th>学校</th>
                                 <th>学科</th>
+                                <th>授课方式</th>
                                 <th>课程名称</th>
                                 <th>学制</th>
                                 <th>授课语言</th>
@@ -1044,28 +1045,31 @@ async function filterCourses() {
 function renderCourses() {
     const tbody = document.getElementById('courses-tbody');
     if (allCourses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
         return;
     }
-    tbody.innerHTML = allCourses.map(c => `
-        <tr>
+    tbody.innerHTML = allCourses.map(c => {
+        const studyModeHtml = (c.study_mode||'').replace(/\//g, '<br>');
+        const identityHtml = (c.student_identity||'').replace(/\//g, '<br>');
+        return `<tr>
             <td><span class="badge badge-primary">${c.course_code}</span></td>
             <td><strong>${c.school_abbr}</strong></td>
             <td><span class="badge badge-info">${c.subject_category}</span></td>
+            <td><span class="badge badge-accent">${c.teaching_mode}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
-            <td>${c.study_mode}</td>
+            <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
             <td>${c.teaching_language}</td>
-            <td>${c.study_duration_display}</td>
+            <td style="font-size:13px">${c.study_duration_display||'—'}</td>
             <td>${c.academic_year}</td>
-            <td>${c.student_identity}</td>
-            <td style="font-size:12px;">${c.tuition_display}</td>
-            <td style="font-size:12px;">${c.deadline_display}</td>
+            <td style="font-size:12px;line-height:1.6">${identityHtml}</td>
+            <td style="font-size:12px;line-height:1.6">${c.tuition_display||'—'}</td>
+            <td style="font-size:12px;line-height:1.6">${c.deadline_display||'—'}</td>
             <td>
                 <button class="btn btn-outline btn-xs" onclick="editCourse(${c.id})">✏️</button>
                 <button class="btn btn-danger btn-xs" onclick="deleteCourse(${c.id}, '${c.course_name_cn}')">🗑</button>
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+    }).join('');
 }
 
 function updateCourseStats() {
@@ -1638,10 +1642,10 @@ async function handleExcelUpload(event) {
             }
 
             // 数值转换
-            if (course.tuition_local) course.tuition_local = parseFloat(course.tuition_local) || 0;
-            if (course.tuition_non_local) course.tuition_non_local = parseFloat(course.tuition_non_local) || 0;
-            if (course.study_duration_ft) course.study_duration_ft = parseFloat(course.study_duration_ft) || null;
-            if (course.study_duration_pt) course.study_duration_pt = parseFloat(course.study_duration_pt) || null;
+            if (course.tuition_local) course.tuition_local = parseFloat(String(course.tuition_local).replace(/,/g, '')) || 0;
+            if (course.tuition_non_local) course.tuition_non_local = parseFloat(String(course.tuition_non_local).replace(/,/g, '')) || 0;
+            if (course.study_duration_ft) course.study_duration_ft = parseFloat(String(course.study_duration_ft).replace(/,/g, '')) || null;
+            if (course.study_duration_pt) course.study_duration_pt = parseFloat(String(course.study_duration_pt).replace(/,/g, '')) || null;
 
             // 布尔值转换
             if (course.chinese_exempt) course.chinese_exempt = ['是', '适用', 'true', '1', 'yes'].includes(course.chinese_exempt.toLowerCase());

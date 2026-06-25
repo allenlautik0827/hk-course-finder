@@ -178,7 +178,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="panel">
 <div class="panel-header"><h3>📚 课程列表 <span id="course-count" class="text-muted"></span></h3></div>
 <div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
-<th>课程编号</th><th>学校</th><th>学科</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>学费（港币）</th><th>截止报名</th><th>操作</th>
+<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>学费（港币）</th><th>截止报名</th><th>操作</th>
 </tr></thead><tbody id="courses-tbody"></tbody></table></div></div>
 </div></div>
 
@@ -513,26 +513,54 @@ function renderCourses(){
     const list=getFilteredCourses();
     document.getElementById('course-count').textContent='（共 '+list.length+' 个课程）';
     const tbody=document.getElementById('courses-tbody');
-    if(!list.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
+    if(!list.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
     tbody.innerHTML=list.map(c=>{
         const s=getSchool(c.school_id);
-        let dur='-';
-        if(c.study_mode==='全日制/非全日制')dur=(c.study_duration_ft?c.study_duration_ft+'年':'—')+'/'+(c.study_duration_pt?c.study_duration_pt+'年':'—');
-        else if(c.study_mode==='仅全日制')dur=c.study_duration_ft?c.study_duration_ft+'年':'—';
-        else dur=c.study_duration_pt?c.study_duration_pt+'年':'—';
-        const tl=c.tuition_local?'HKD'+Number(c.tuition_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
-        const tn=c.tuition_non_local?'HKD'+Number(c.tuition_non_local).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
-        const dl=c.deadline_local?fmtDate(c.deadline_local):'—';
-        const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):'—';
+        let dur='—';
+        if(c.study_mode==='全日制/非全日制'){
+            const ft=c.study_duration_ft?c.study_duration_ft+'年':'—';
+            const pt=c.study_duration_pt?c.study_duration_pt+'年':'—';
+            dur=ft+'/'+pt;
+        } else if(c.study_mode==='全日制'){
+            dur=c.study_duration_ft?c.study_duration_ft+'年':'—';
+        } else {
+            dur=c.study_duration_pt?c.study_duration_pt+'年':'—';
+        }
+        const studyModeHtml=esc(c.study_mode).replace(/\//g,'<br>');
+        const identityHtml=esc(c.student_identity).replace(/\//g,'<br>');
+        let tuitionHtml='—';
+        const tl=c.tuition_local?Number(c.tuition_local):null;
+        const tn=c.tuition_non_local?Number(c.tuition_non_local):null;
+        if(tl!==null&&tn!==null&&tl!==tn){
+            tuitionHtml='HKD'+tl.toLocaleString()+'（本地生）<br>HKD'+tn.toLocaleString()+'（非本地生）';
+        } else if(tl!==null){
+            tuitionHtml='HKD'+tl.toLocaleString()+'（本地生）';
+        } else if(tn!==null){
+            tuitionHtml='HKD'+tn.toLocaleString()+'（非本地生）';
+        }
+        let deadlineHtml='—';
+        const dl=c.deadline_local?fmtDate(c.deadline_local):null;
+        const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):null;
+        if(dl&&dn&&dl!==dn){
+            deadlineHtml=dl+'（本地生）<br>'+dn+'（非本地生）';
+        } else if(dl){
+            deadlineHtml=dl+'（本地生）';
+        } else if(dn){
+            deadlineHtml=dn+'（非本地生）';
+        }
         return `<tr>
 <td><span class="badge badge-primary">${esc(c.course_code)}</span></td>
 <td><strong>${s?s.abbreviation:'—'}</strong></td>
 <td><span class="badge badge-info">${esc(c.subject_category)}</span></td>
+<td><span class="badge badge-accent">${esc(c.teaching_mode)}</span></td>
 <td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
-<td>${esc(c.study_mode)}</td><td>${esc(c.teaching_language)}</td><td>${dur}</td>
-<td>${esc(c.academic_year)}</td><td>${esc(c.student_identity)}</td>
-<td style="font-size:12px">${tl} / ${tn}</td>
-<td style="font-size:12px">${dl}（本地生）/ ${dn}（非本地生）</td>
+<td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
+<td>${esc(c.teaching_language)}</td>
+<td style="font-size:13px">${dur}</td>
+<td>${esc(c.academic_year)}</td>
+<td style="font-size:12px;line-height:1.6">${identityHtml}</td>
+<td style="font-size:12px;line-height:1.6">${tuitionHtml}</td>
+<td style="font-size:12px;line-height:1.6">${deadlineHtml}</td>
 <td><button class="btn btn-outline btn-xs" onclick="editCourse(${c.id})">✏️</button>
 <button class="btn btn-danger btn-xs" onclick="deleteCourse(${c.id})">🗑</button></td></tr>`;
     }).join('');
@@ -938,10 +966,10 @@ async function handleExcelUpload(event) {
                 else { errors.push('第 ' + (idx + 2) + ' 行：找不到学校「' + course.school_abbreviation + '」'); }
             }
 
-            if (course.tuition_local) course.tuition_local = parseFloat(course.tuition_local) || 0;
-            if (course.tuition_non_local) course.tuition_non_local = parseFloat(course.tuition_non_local) || 0;
-            if (course.study_duration_ft) course.study_duration_ft = parseFloat(course.study_duration_ft) || null;
-            if (course.study_duration_pt) course.study_duration_pt = parseFloat(course.study_duration_pt) || null;
+            if (course.tuition_local) course.tuition_local = parseFloat(String(course.tuition_local).replace(/,/g, '')) || 0;
+            if (course.tuition_non_local) course.tuition_non_local = parseFloat(String(course.tuition_non_local).replace(/,/g, '')) || 0;
+            if (course.study_duration_ft) course.study_duration_ft = parseFloat(String(course.study_duration_ft).replace(/,/g, '')) || null;
+            if (course.study_duration_pt) course.study_duration_pt = parseFloat(String(course.study_duration_pt).replace(/,/g, '')) || null;
 
             if (course.chinese_exempt) course.chinese_exempt = ['是','适用','true','1','yes'].includes(course.chinese_exempt.toLowerCase()) ? 1 : 0;
             if (course.english_exempt) course.english_exempt = ['是','适用','true','1','yes'].includes(course.english_exempt.toLowerCase()) ? 1 : 0;

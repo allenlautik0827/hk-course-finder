@@ -348,27 +348,39 @@ def get_courses():
     result = []
     for c in courses:
         # 格式化修读时间
-        study_duration = ''
+        study_duration = '-'
         if c['study_mode'] == '全日制/非全日制':
             ft = f"{c['study_duration_ft']}年" if c['study_duration_ft'] else '-'
             pt = f"{c['study_duration_pt']}年" if c['study_duration_pt'] else '-'
             study_duration = f"{ft}/{pt}"
-        elif c['study_mode'] == '仅全日制':
+        elif c['study_mode'] == '全日制':
             study_duration = f"{c['study_duration_ft']}年" if c['study_duration_ft'] else '-'
-        elif c['study_mode'] == '仅非全日制':
+        else:
             study_duration = f"{c['study_duration_pt']}年" if c['study_duration_pt'] else '-'
 
-        # 格式化学费
-        tuition = ''
-        tl = f"HKD{int(c['tuition_local']):,}" if c['tuition_local'] else 'HKD-'
-        tn = f"HKD{int(c['tuition_non_local']):,}" if c['tuition_non_local'] else 'HKD-'
-        tuition = f"{tl}（本地生）/ {tn}（非本地生）"
+        # 格式化学费（本地生与非本地生不同时分行显示）
+        tl = f"HKD{int(c['tuition_local']):,}" if c['tuition_local'] else None
+        tn = f"HKD{int(c['tuition_non_local']):,}" if c['tuition_non_local'] else None
+        if tl and tn and tl != tn:
+            tuition = f"{tl}（本地生）<br>{tn}（非本地生）"
+        elif tl:
+            tuition = f"{tl}（本地生）"
+        elif tn:
+            tuition = f"{tn}（非本地生）"
+        else:
+            tuition = '—'
 
-        # 格式化截止日期
-        deadline = ''
-        dl = c['deadline_local'] if c['deadline_local'] else '-'
-        dn = c['deadline_non_local'] if c['deadline_non_local'] else '-'
-        deadline = f"{dl}（本地生）/ {dn}（非本地生）"
+        # 格式化截止日期（不同时分行显示）
+        dl = c['deadline_local'] if c['deadline_local'] else None
+        dn = c['deadline_non_local'] if c['deadline_non_local'] else None
+        if dl and dn and dl != dn:
+            deadline = f"{dl}（本地生）<br>{dn}（非本地生）"
+        elif dl:
+            deadline = f"{dl}（本地生）"
+        elif dn:
+            deadline = f"{dn}（非本地生）"
+        else:
+            deadline = '—'
 
         result.append({
             'id': c['id'],
