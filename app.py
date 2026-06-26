@@ -138,7 +138,10 @@ def init_db():
                 english_toefl_ibt TEXT DEFAULT '',
                 english_ielts TEXT DEFAULT '',
                 english_cet4 TEXT DEFAULT '',
+                english_cet6 TEXT DEFAULT '',
                 english_other TEXT DEFAULT '',
+                chinese_req INTEGER DEFAULT 0,
+                english_req INTEGER DEFAULT 0,
                 other_requirements TEXT DEFAULT '',
                 interview_required INTEGER DEFAULT 0,
                 course_description TEXT DEFAULT '',
@@ -151,6 +154,9 @@ def init_db():
         """)
         cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS degree TEXT DEFAULT ''")
         cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS teaching_format TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS chinese_req INTEGER DEFAULT 0")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS english_req INTEGER DEFAULT 0")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS english_cet6 TEXT DEFAULT ''")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS audit_log (
                 id SERIAL PRIMARY KEY,
@@ -217,7 +223,10 @@ def init_db():
                 english_toefl_ibt TEXT DEFAULT '',
                 english_ielts TEXT DEFAULT '',
                 english_cet4 TEXT DEFAULT '',
+                english_cet6 TEXT DEFAULT '',
                 english_other TEXT DEFAULT '',
+                chinese_req INTEGER DEFAULT 0,
+                english_req INTEGER DEFAULT 0,
                 other_requirements TEXT DEFAULT '',
                 interview_required INTEGER DEFAULT 0,
                 course_description TEXT DEFAULT '',
@@ -247,6 +256,18 @@ def init_db():
             pass
         try:
             cursor.execute("ALTER TABLE courses ADD COLUMN teaching_format TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN chinese_req INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN english_req INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN english_cet6 TEXT DEFAULT ''")
         except Exception:
             pass
         db.commit()
@@ -593,7 +614,10 @@ def format_course(c):
         'english_toefl_ibt': c.get('english_toefl_ibt', ''),
         'english_ielts': c.get('english_ielts', ''),
         'english_cet4': c.get('english_cet4', ''),
+        'english_cet6': c.get('english_cet6', ''),
         'english_other': c.get('english_other', ''),
+        'chinese_req': bool(c.get('chinese_req')),
+        'english_req': bool(c.get('english_req')),
         'other_requirements': c.get('other_requirements', ''),
         'interview_required': bool(c.get('interview_required')),
         'course_description': c.get('course_description', ''),
@@ -725,10 +749,11 @@ def add_course():
                 qf_level, qr_number, education_requirement,
                 chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
                 english_exempt, english_dse, english_gaokao, english_toefl_pbt,
-                english_toefl_ibt, english_ielts, english_cet4, english_other,
+                english_toefl_ibt, english_ielts, english_cet4, english_cet6, english_other,
+                chinese_req, english_req,
                 other_requirements, interview_required,
                 course_description, course_page_url, course_brochure_url
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             new_code,
             data['school_id'], data['subject_category'], data['course_name_cn'], data.get('course_name_en', ''),
@@ -745,7 +770,9 @@ def add_course():
             1 if data.get('english_exempt') else 0,
             data.get('english_dse', ''), data.get('english_gaokao', ''),
             data.get('english_toefl_pbt', ''), data.get('english_toefl_ibt', ''),
-            data.get('english_ielts', ''), data.get('english_cet4', ''), data.get('english_other', ''),
+            data.get('english_ielts', ''), data.get('english_cet4', ''), data.get('english_cet6', ''), data.get('english_other', ''),
+            1 if data.get('chinese_req') else 0,
+            1 if data.get('english_req') else 0,
             data.get('other_requirements', ''),
             1 if data.get('interview_required') else 0,
             data.get('course_description', ''), data.get('course_page_url', ''), data.get('course_brochure_url', '')
@@ -848,10 +875,11 @@ def batch_sync_courses():
                     qf_level, qr_number, education_requirement,
                     chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
                     english_exempt, english_dse, english_gaokao, english_toefl_pbt,
-                    english_toefl_ibt, english_ielts, english_cet4, english_other,
+                    english_toefl_ibt, english_ielts, english_cet4, english_cet6, english_other,
+                    chinese_req, english_req,
                     other_requirements, interview_required,
                     course_description, course_page_url, course_brochure_url
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 new_code, school_id,
                 get_str('subject_category'), get_str('course_name_cn'), get_str('course_name_en'),
@@ -866,7 +894,8 @@ def batch_sync_courses():
                 get_str('chinese_hsk'), get_str('chinese_other'),
                 get_bool('english_exempt'), get_str('english_dse'), get_str('english_gaokao'),
                 get_str('english_toefl_pbt'), get_str('english_toefl_ibt'),
-                get_str('english_ielts'), get_str('english_cet4'), get_str('english_other'),
+                get_str('english_ielts'), get_str('english_cet4'), get_str('english_cet6'), get_str('english_other'),
+                get_bool('chinese_req'), get_bool('english_req'),
                 get_str('other_requirements'), get_bool('interview_required'),
                 get_str('course_description'), get_str('course_page_url'), get_str('course_brochure_url')
             ))
@@ -904,7 +933,7 @@ def update_course(course_id):
         'qf_level', 'qr_number', 'education_requirement',
         'chinese_dse', 'chinese_gaokao', 'chinese_hsk', 'chinese_other',
         'english_dse', 'english_gaokao', 'english_toefl_pbt', 'english_toefl_ibt',
-        'english_ielts', 'english_cet4', 'english_other', 'other_requirements',
+        'english_ielts', 'english_cet4', 'english_cet6', 'english_other', 'other_requirements',
         'course_description', 'course_page_url', 'course_brochure_url',
     }
 
@@ -916,7 +945,7 @@ def update_course(course_id):
             if old_val != new_val:
                 changes[key] = {'old': old[key], 'new': data[key]}
 
-    for bool_field in ['chinese_exempt', 'english_exempt', 'interview_required']:
+    for bool_field in ['chinese_exempt', 'english_exempt', 'interview_required', 'chinese_req', 'english_req']:
         if bool_field in data:
             old_val = bool(old[bool_field])
             new_val = bool(data[bool_field])
@@ -935,7 +964,8 @@ def update_course(course_id):
             qf_level=?, qr_number=?, education_requirement=?,
             chinese_exempt=?, chinese_dse=?, chinese_gaokao=?, chinese_hsk=?, chinese_other=?,
             english_exempt=?, english_dse=?, english_gaokao=?, english_toefl_pbt=?,
-            english_toefl_ibt=?, english_ielts=?, english_cet4=?, english_other=?,
+            english_toefl_ibt=?, english_ielts=?, english_cet4=?, english_cet6=?, english_other=?,
+            chinese_req=?, english_req=?,
             other_requirements=?, interview_required=?,
             course_description=?, course_page_url=?, course_brochure_url=?,
             updated_at=CURRENT_TIMESTAMP
@@ -950,7 +980,9 @@ def update_course(course_id):
         gv('chinese_dse'), gv('chinese_gaokao'), gv('chinese_hsk'), gv('chinese_other'),
         1 if data.get('english_exempt', old['english_exempt']) else 0,
         gv('english_dse'), gv('english_gaokao'), gv('english_toefl_pbt'),
-        gv('english_toefl_ibt'), gv('english_ielts'), gv('english_cet4'), gv('english_other'),
+        gv('english_toefl_ibt'), gv('english_ielts'), gv('english_cet4'), gv('english_cet6'), gv('english_other'),
+        1 if data.get('chinese_req', old['chinese_req']) else 0,
+        1 if data.get('english_req', old['english_req']) else 0,
         gv('other_requirements'), 1 if data.get('interview_required', old['interview_required']) else 0,
         gv('course_description'), gv('course_page_url'), gv('course_brochure_url'),
         course_id

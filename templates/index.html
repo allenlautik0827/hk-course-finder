@@ -730,6 +730,16 @@
                 <div class="form-grid" style="margin-top:12px;">
                     <div class="form-group">
                         <label>中文要求</label>
+                        <select id="chinese-req"><option value="0">否</option><option value="1">是</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>英文要求</label>
+                        <select id="english-req"><option value="0">否</option><option value="1">是</option></select>
+                    </div>
+                </div>
+                <div class="form-grid" style="margin-top:12px;">
+                    <div class="form-group">
+                        <label>中文要求详情</label>
                         <div class="form-check"><input type="checkbox" id="chinese-exempt"> 持有以中文授课的认可学位免试</div>
                         <input type="text" id="chinese-dse" placeholder="DSE 级别" style="margin-top:6px;">
                         <input type="text" id="chinese-gaokao" placeholder="高考 分数" style="margin-top:6px;">
@@ -737,7 +747,7 @@
                         <input type="text" id="chinese-other" placeholder="其他" style="margin-top:6px;">
                     </div>
                     <div class="form-group">
-                        <label>英文要求</label>
+                        <label>英文要求详情</label>
                         <div class="form-check"><input type="checkbox" id="english-exempt"> 持有以英文授课的认可学位免试</div>
                         <input type="text" id="english-dse" placeholder="DSE 级别" style="margin-top:6px;">
                         <input type="text" id="english-gaokao" placeholder="高考 分数" style="margin-top:6px;">
@@ -745,6 +755,7 @@
                         <input type="text" id="english-toefl-ibt" placeholder="TOEFL 网考" style="margin-top:6px;">
                         <input type="text" id="english-ielts" placeholder="IELTS 分数" style="margin-top:6px;">
                         <input type="text" id="english-cet4" placeholder="CET-4 分数" style="margin-top:6px;">
+                        <input type="text" id="english-cet6" placeholder="CET-6 分数" style="margin-top:6px;">
                         <input type="text" id="english-other" placeholder="其他" style="margin-top:6px;">
                     </div>
                 </div>
@@ -1212,6 +1223,8 @@ function openCourseModal(id = null) {
             document.getElementById('course-qf').value = c.qf_level || '';
             document.getElementById('course-qr').value = c.qr_number || '';
             document.getElementById('course-edu-req').value = c.education_requirement || '';
+            document.getElementById('chinese-req').value = c.chinese_req ? '1' : '0';
+            document.getElementById('english-req').value = c.english_req ? '1' : '0';
             document.getElementById('chinese-exempt').checked = c.chinese_exempt;
             document.getElementById('chinese-dse').value = c.chinese_dse || '';
             document.getElementById('chinese-gaokao').value = c.chinese_gaokao || '';
@@ -1224,6 +1237,7 @@ function openCourseModal(id = null) {
             document.getElementById('english-toefl-ibt').value = c.english_toefl_ibt || '';
             document.getElementById('english-ielts').value = c.english_ielts || '';
             document.getElementById('english-cet4').value = c.english_cet4 || '';
+            document.getElementById('english-cet6').value = c.english_cet6 || '';
             document.getElementById('english-other').value = c.english_other || '';
             document.getElementById('course-other-req').value = c.other_requirements || '';
             document.getElementById('course-interview').value = c.interview_required ? '1' : '0';
@@ -1280,6 +1294,7 @@ async function saveCourse() {
         chinese_gaokao: document.getElementById('chinese-gaokao').value.trim(),
         chinese_hsk: document.getElementById('chinese-hsk').value.trim(),
         chinese_other: document.getElementById('chinese-other').value.trim(),
+        chinese_req: document.getElementById('chinese-req').value === '1',
         english_exempt: document.getElementById('english-exempt').checked,
         english_dse: document.getElementById('english-dse').value.trim(),
         english_gaokao: document.getElementById('english-gaokao').value.trim(),
@@ -1287,7 +1302,9 @@ async function saveCourse() {
         english_toefl_ibt: document.getElementById('english-toefl-ibt').value.trim(),
         english_ielts: document.getElementById('english-ielts').value.trim(),
         english_cet4: document.getElementById('english-cet4').value.trim(),
+        english_cet6: document.getElementById('english-cet6').value.trim(),
         english_other: document.getElementById('english-other').value.trim(),
+        english_req: document.getElementById('english-req').value === '1',
         other_requirements: document.getElementById('course-other-req').value.trim(),
         interview_required: document.getElementById('course-interview').value === '1',
         course_description: document.getElementById('course-desc').value.trim(),
@@ -1393,7 +1410,11 @@ async function viewCourseDetail(id) {
                 <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement || '-'}</div></div>
             </div>
             <div class="detail-grid" style="margin-top:8px;">
-                <div class="detail-item"><div class="detail-label"><strong>中文要求</strong></div>
+                <div class="detail-item"><div class="detail-label"><strong>是否要求中文</strong></div><div class="detail-value">${c.chinese_req ? '✅ 是' : '❌ 否'}</div></div>
+                <div class="detail-item"><div class="detail-label"><strong>是否要求英文</strong></div><div class="detail-value">${c.english_req ? '✅ 是' : '❌ 否'}</div></div>
+            </div>
+            <div class="detail-grid" style="margin-top:8px;">
+                <div class="detail-item"><div class="detail-label"><strong>中文要求详情</strong></div>
                     <div class="detail-value" style="font-size:13px;">
                         ${c.chinese_exempt ? '✅ 持有以中文授课的认可学位免试：<strong>适用</strong><br>' : '❌ 持有以中文授课的认可学位免试：<strong>不适用</strong><br>'}
                         ${c.chinese_dse ? '② DSE：' + c.chinese_dse + '级<br>' : ''}
@@ -1403,7 +1424,7 @@ async function viewCourseDetail(id) {
                         ${!c.chinese_dse && !c.chinese_gaokao && !c.chinese_hsk && !c.chinese_other ? '（未设置）' : ''}
                     </div>
                 </div>
-                <div class="detail-item"><div class="detail-label"><strong>英文要求</strong></div>
+                <div class="detail-item"><div class="detail-label"><strong>英文要求详情</strong></div>
                     <div class="detail-value" style="font-size:13px;">
                         ${c.english_exempt ? '✅ 持有以英文授课的认可学位免试：<strong>适用</strong><br>' : '❌ 持有以英文授课的认可学位免试：<strong>不适用</strong><br>'}
                         ${c.english_dse ? '② DSE：' + c.english_dse + '级<br>' : ''}
@@ -1412,8 +1433,9 @@ async function viewCourseDetail(id) {
                         ${c.english_toefl_ibt ? '④ TOEFL网考：' + c.english_toefl_ibt + '分<br>' : ''}
                         ${c.english_ielts ? '⑤ IELTS：' + c.english_ielts + '分<br>' : ''}
                         ${c.english_cet4 ? '⑥ CET-4：' + c.english_cet4 + '分<br>' : ''}
-                        ${c.english_other ? '⑦ 其他：' + c.english_other : ''}
-                        ${!c.english_dse && !c.english_gaokao && !c.english_toefl_pbt && !c.english_toefl_ibt && !c.english_ielts && !c.english_cet4 && !c.english_other ? '（未设置）' : ''}
+                        ${c.english_cet6 ? '⑦ CET-6：' + c.english_cet6 + '分<br>' : ''}
+                        ${c.english_other ? '⑧ 其他：' + c.english_other : ''}
+                        ${!c.english_dse && !c.english_gaokao && !c.english_toefl_pbt && !c.english_toefl_ibt && !c.english_ielts && !c.english_cet4 && !c.english_cet6 && !c.english_other ? '（未设置）' : ''}
                     </div>
                 </div>
                 <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements || '-'}</div></div>
@@ -1541,6 +1563,8 @@ const EXCEL_COLUMN_MAP = {
     '资历名册登记号码': 'qr_number',
     '学历要求': 'education_requirement',
     '中文免试': 'chinese_exempt',
+    '中文要求': 'chinese_req',
+    '英文要求': 'english_req',
     '中文DSE': 'chinese_dse',
     '中文高考': 'chinese_gaokao',
     '中文HSK': 'chinese_hsk',
@@ -1552,6 +1576,7 @@ const EXCEL_COLUMN_MAP = {
     'TOEFL网考': 'english_toefl_ibt',
     'IELTS': 'english_ielts',
     'CET-4': 'english_cet4',
+    'CET-6': 'english_cet6',
     '英文其他': 'english_other',
     '其他要求': 'other_requirements',
     '面试要求': 'interview_required',
@@ -1585,6 +1610,8 @@ function downloadTemplate() {
             '资历架构': 'QF Level 6',
             '资历名册登记号码': 'QR123456',
             '学历要求': '持有认可学士学位',
+            '中文要求': '是',
+            '英文要求': '是',
             '中文免试': '否',
             '中文DSE': '',
             '中文高考': '',
@@ -1597,6 +1624,7 @@ function downloadTemplate() {
             'TOEFL网考': '80',
             'IELTS': '6.5',
             'CET-4': '',
+            'CET-6': '',
             '英文其他': '',
             '其他要求': '有相关工作经验优先',
             '面试要求': '需要',
@@ -1623,6 +1651,8 @@ function downloadTemplate() {
             '资历架构': 'QF Level 6',
             '资历名册登记号码': 'QR789012',
             '学历要求': '持有计算机或相关学科学士学位',
+            '中文要求': '否',
+            '英文要求': '是',
             '中文免试': '是',
             '中文DSE': '',
             '中文高考': '',
@@ -1635,6 +1665,7 @@ function downloadTemplate() {
             'TOEFL网考': '79',
             'IELTS': '6.5',
             'CET-4': '',
+            'CET-6': '',
             '英文其他': '',
             '其他要求': '',
             '面试要求': '不需要',

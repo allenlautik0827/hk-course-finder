@@ -269,14 +269,18 @@ table tbody tr:hover{background:#f8fafd}
 <div class="form-group form-full"><label>学历要求</label><textarea id="cm-edu-req" rows="2" placeholder="如：持有认可学士学位"></textarea></div>
 </div>
 <div class="form-grid" style="margin-top:12px">
-<div class="form-group"><label>中文要求</label>
+<div class="form-group"><label>中文要求</label><select id="cm-chinese-req"><option value="0">否</option><option value="1">是</option></select></div>
+<div class="form-group"><label>英文要求</label><select id="cm-english-req"><option value="0">否</option><option value="1">是</option></select></div>
+</div>
+<div class="form-grid" style="margin-top:12px">
+<div class="form-group"><label>中文要求详情</label>
 <div class="form-check"><input type="checkbox" id="cm-ch-exempt"> 持有以中文授课的认可学位免试</div>
 <input type="text" id="cm-ch-dse" placeholder="DSE 级别" class="form-inline-input">
 <input type="text" id="cm-ch-gaokao" placeholder="高考 分数" class="form-inline-input">
 <input type="text" id="cm-ch-hsk" placeholder="HSK 级别" class="form-inline-input">
 <input type="text" id="cm-ch-other" placeholder="其他" class="form-inline-input">
 </div>
-<div class="form-group"><label>英文要求</label>
+<div class="form-group"><label>英文要求详情</label>
 <div class="form-check"><input type="checkbox" id="cm-en-exempt"> 持有以英文授课的认可学位免试</div>
 <input type="text" id="cm-en-dse" placeholder="DSE 级别" class="form-inline-input">
 <input type="text" id="cm-en-gaokao" placeholder="高考 分数" class="form-inline-input">
@@ -284,6 +288,7 @@ table tbody tr:hover{background:#f8fafd}
 <input type="text" id="cm-en-toefl-ibt" placeholder="TOEFL 网考" class="form-inline-input">
 <input type="text" id="cm-en-ielts" placeholder="IELTS 分数" class="form-inline-input">
 <input type="text" id="cm-en-cet4" placeholder="CET-4 分数" class="form-inline-input">
+<input type="text" id="cm-en-cet6" placeholder="CET-6 分数" class="form-inline-input">
 <input type="text" id="cm-en-other" placeholder="其他" class="form-inline-input">
 </div>
 </div>
@@ -616,10 +621,11 @@ function openCourseModal(id){
      'cm-dur-ft','cm-dur-pt','cm-year','cm-identity','cm-degree','cm-format','cm-tuition-local','cm-tuition-nonlocal',
      'cm-deadline-local','cm-deadline-nonlocal','cm-qf','cm-qr','cm-edu-req','cm-ch-dse','cm-ch-gaokao',
      'cm-ch-hsk','cm-ch-other','cm-en-dse','cm-en-gaokao','cm-en-toefl-pbt','cm-en-toefl-ibt',
-     'cm-en-ielts','cm-en-cet4','cm-en-other','cm-other-req','cm-desc','cm-page-url','cm-brochure-url'].forEach(id=>{
-         const el=document.getElementById(id);if(el)el.value='';
-     });
+     'cm-en-ielts','cm-en-cet4','cm-en-cet6','cm-en-other','cm-other-req','cm-desc','cm-page-url','cm-brochure-url'].forEach(id=>{
+        const el=document.getElementById(id);if(el)el.value='';
+    });
     ['cm-ch-exempt','cm-en-exempt'].forEach(id=>document.getElementById(id).checked=false);
+    ['cm-chinese-req','cm-english-req'].forEach(id=>document.getElementById(id).value='0');
     document.getElementById('cm-interview').value='0';
     populateFilters();
     toggleCmDuration();
@@ -639,6 +645,7 @@ function openCourseModal(id){
         setVal('cm-deadline-local',c.deadline_local||'');setVal('cm-deadline-nonlocal',c.deadline_non_local||'');
         setVal('cm-qf',c.qf_level||'');setVal('cm-qr',c.qr_number||'');
         setVal('cm-edu-req',c.education_requirement||'');
+        setVal('cm-chinese-req',c.chinese_req?'1':'0');setVal('cm-english-req',c.english_req?'1':'0');
         document.getElementById('cm-ch-exempt').checked=!!c.chinese_exempt;
         setVal('cm-ch-dse',c.chinese_dse||'');setVal('cm-ch-gaokao',c.chinese_gaokao||'');
         setVal('cm-ch-hsk',c.chinese_hsk||'');setVal('cm-ch-other',c.chinese_other||'');
@@ -646,6 +653,7 @@ function openCourseModal(id){
         setVal('cm-en-dse',c.english_dse||'');setVal('cm-en-gaokao',c.english_gaokao||'');
         setVal('cm-en-toefl-pbt',c.english_toefl_pbt||'');setVal('cm-en-toefl-ibt',c.english_toefl_ibt||'');
         setVal('cm-en-ielts',c.english_ielts||'');setVal('cm-en-cet4',c.english_cet4||'');
+        setVal('cm-en-cet6',c.english_cet6||'');
         setVal('cm-en-other',c.english_other||'');setVal('cm-other-req',c.other_requirements||'');
         setVal('cm-interview',c.interview_required?'1':'0');
         setVal('cm-desc',c.course_description||'');setVal('cm-page-url',c.course_page_url||'');
@@ -687,6 +695,7 @@ function saveCourse(){
         chinese_gaokao:document.getElementById('cm-ch-gaokao').value.trim(),
         chinese_hsk:document.getElementById('cm-ch-hsk').value.trim(),
         chinese_other:document.getElementById('cm-ch-other').value.trim(),
+        chinese_req:document.getElementById('cm-chinese-req').value==='1'?1:0,
         english_exempt:document.getElementById('cm-en-exempt').checked?1:0,
         english_dse:document.getElementById('cm-en-dse').value.trim(),
         english_gaokao:document.getElementById('cm-en-gaokao').value.trim(),
@@ -694,7 +703,9 @@ function saveCourse(){
         english_toefl_ibt:document.getElementById('cm-en-toefl-ibt').value.trim(),
         english_ielts:document.getElementById('cm-en-ielts').value.trim(),
         english_cet4:document.getElementById('cm-en-cet4').value.trim(),
+        english_cet6:document.getElementById('cm-en-cet6').value.trim(),
         english_other:document.getElementById('cm-en-other').value.trim(),
+        english_req:document.getElementById('cm-english-req').value==='1'?1:0,
         other_requirements:document.getElementById('cm-other-req').value.trim(),
         interview_required:document.getElementById('cm-interview').value==='1'?1:0,
         course_description:document.getElementById('cm-desc').value.trim(),
@@ -780,7 +791,11 @@ function viewDetail(id){
 <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement||'—'}</div></div>
 </div>
 <div class="detail-grid" style="margin-top:8px">
-<div class="detail-item"><div class="detail-label"><strong>中文要求</strong></div><div class="detail-value" style="font-size:13px">
+<div class="detail-item"><div class="detail-label"><strong>是否要求中文</strong></div><div class="detail-value">${c.chinese_req?'✅ 是':'❌ 否'}</div></div>
+<div class="detail-item"><div class="detail-label"><strong>是否要求英文</strong></div><div class="detail-value">${c.english_req?'✅ 是':'❌ 否'}</div></div>
+</div>
+<div class="detail-grid" style="margin-top:8px">
+<div class="detail-item"><div class="detail-label"><strong>中文要求详情</strong></div><div class="detail-value" style="font-size:13px">
 ${c.chinese_exempt?'✅ 持有以中文授课的认可学位免试：<strong>适用</strong><br>':'❌ 持有以中文授课的认可学位免试：<strong>不适用</strong><br>'}
 ${c.chinese_dse?'② DSE：'+esc(c.chinese_dse)+'级<br>':''}
 ${c.chinese_gaokao?'③ 高考：'+esc(c.chinese_gaokao)+'分<br>':''}
@@ -788,7 +803,7 @@ ${c.chinese_hsk?'④ HSK：'+esc(c.chinese_hsk)+'级<br>':''}
 ${c.chinese_other?'⑤ 其他：'+esc(c.chinese_other):''}
 ${!c.chinese_dse&&!c.chinese_gaokao&&!c.chinese_hsk&&!c.chinese_other?'（未设置）':''}
 </div></div>
-<div class="detail-item"><div class="detail-label"><strong>英文要求</strong></div><div class="detail-value" style="font-size:13px">
+<div class="detail-item"><div class="detail-label"><strong>英文要求详情</strong></div><div class="detail-value" style="font-size:13px">
 ${c.english_exempt?'✅ 持有以英文授课的认可学位免试：<strong>适用</strong><br>':'❌ 持有以英文授课的认可学位免试：<strong>不适用</strong><br>'}
 ${c.english_dse?'② DSE：'+esc(c.english_dse)+'级<br>':''}
 ${c.english_gaokao?'③ 高考：'+esc(c.english_gaokao)+'分<br>':''}
@@ -796,8 +811,9 @@ ${c.english_toefl_pbt?'④ TOEFL笔考：'+esc(c.english_toefl_pbt)+'分<br>':''
 ${c.english_toefl_ibt?'④ TOEFL网考：'+esc(c.english_toefl_ibt)+'分<br>':''}
 ${c.english_ielts?'⑤ IELTS：'+esc(c.english_ielts)+'分<br>':''}
 ${c.english_cet4?'⑥ CET-4：'+esc(c.english_cet4)+'分<br>':''}
-${c.english_other?'⑦ 其他：'+esc(c.english_other):''}
-${!c.english_dse&&!c.english_gaokao&&!c.english_toefl_pbt&&!c.english_toefl_ibt&&!c.english_ielts&&!c.english_cet4&&!c.english_other?'（未设置）':''}
+${c.english_cet6?'⑦ CET-6：'+esc(c.english_cet6)+'分<br>':''}
+${c.english_other?'⑧ 其他：'+esc(c.english_other):''}
+${!c.english_dse&&!c.english_gaokao&&!c.english_toefl_pbt&&!c.english_toefl_ibt&&!c.english_ielts&&!c.english_cet4&&!c.english_cet6&&!c.english_other?'（未设置）':''}
 </div></div>
 <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements||'—'}</div></div>
 <div class="detail-item"><div class="detail-label">面试要求</div><div class="detail-value">${c.interview_required?'✅ 需要':'❌ 不需要'}</div></div>
@@ -914,8 +930,9 @@ const EXCEL_COLUMN_MAP = {
     '资历名册登记号码':'qr_number',
     '学历要求':'education_requirement',
     '中文免试':'chinese_exempt','中文DSE':'chinese_dse','中文高考':'chinese_gaokao','中文HSK':'chinese_hsk','中文其他':'chinese_other',
+    '中文要求':'chinese_req','英文要求':'english_req',
     '英文免试':'english_exempt','英文DSE':'english_dse','英文高考':'english_gaokao',
-    'TOEFL笔考':'english_toefl_pbt','TOEFL网考':'english_toefl_ibt','IELTS':'english_ielts','CET-4':'english_cet4','英文其他':'english_other',
+    'TOEFL笔考':'english_toefl_pbt','TOEFL网考':'english_toefl_ibt','IELTS':'english_ielts','CET-4':'english_cet4','CET-6':'english_cet6','英文其他':'english_other',
     '其他要求':'other_requirements',
     '面试要求':'interview_required',
     '课程介绍':'course_description',
@@ -933,8 +950,9 @@ function downloadTemplate() {
             '学费（本地生）':150000,'学费（非本地生）':300000,
             '截止报名（本地生）':'2027-01-31','截止报名（非本地生）':'2026-12-31',
             '资历架构':'QF Level 6','资历名册登记号码':'QR123456','学历要求':'持有认可学士学位',
+            '中文要求':'是','英文要求':'是',
             '中文免试':'否','中文DSE':'','中文高考':'','中文HSK':'','中文其他':'',
-            '英文免试':'否','英文DSE':'5','英文高考':'120','TOEFL笔考':'550','TOEFL网考':'80','IELTS':'6.5','CET-4':'','英文其他':'',
+            '英文免试':'否','英文DSE':'5','英文高考':'120','TOEFL笔考':'550','TOEFL网考':'80','IELTS':'6.5','CET-4':'','CET-6':'','英文其他':'',
             '其他要求':'有相关工作经验优先','面试要求':'需要',
             '课程介绍':'本课程旨在培养金融专业人才…','课程主页':'https://www.hku.hk/mfin','课程简章':'https://www.hku.hk/mfin/brochure.pdf',
         },
@@ -945,8 +963,9 @@ function downloadTemplate() {
             '学费（本地生）':120000,'学费（非本地生）':250000,
             '截止报名（本地生）':'2027-02-28','截止报名（非本地生）':'2027-01-15',
             '资历架构':'QF Level 6','资历名册登记号码':'QR789012','学历要求':'持有计算机或相关学科学士学位',
+            '中文要求':'否','英文要求':'是',
             '中文免试':'是','中文DSE':'','中文高考':'','中文HSK':'','中文其他':'',
-            '英文免试':'否','英文DSE':'','英文高考':'','TOEFL笔考':'','TOEFL网考':'79','IELTS':'6.5','CET-4':'','英文其他':'',
+            '英文免试':'否','英文DSE':'','英文高考':'','TOEFL笔考':'','TOEFL网考':'79','IELTS':'6.5','CET-4':'','CET-6':'','英文其他':'',
             '其他要求':'','面试要求':'不需要',
             '课程介绍':'培养计算机科学高级人才…','课程主页':'https://www.cuhk.edu.hk/msc-cs','课程简章':'',
         },
