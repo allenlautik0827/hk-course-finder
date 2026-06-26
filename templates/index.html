@@ -268,10 +268,13 @@
             width: 44px; height: 44px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
-        .stat-icon.blue { background: #e8f0fe; color: var(--primary); }
+        .stat-icon.blue { background: #e3f2fd; }
         .stat-icon.green { background: #e8f8ef; color: var(--success); }
-        .stat-icon.amber { background: #fef5e7; color: var(--warning); }
-        .stat-icon.purple { background: #f0e8f8; color: #8e44ad; }
+        .stat-icon.orange { background: #fff3e0; }
+        .stat-icon.purple { background: #f3e5f5; }
+        .stat-icon.red { background: #ffebee; }
+        .stat-icon.teal { background: #e0f2f1; }
+        .stat-icon.gray { background: #f5f5f5; }
         .stat-value { font-size: 24px; font-weight: 700; line-height: 1.2; }
         .stat-label { font-size: 12px; color: var(--text-secondary); }
         /* Empty State */
@@ -325,6 +328,13 @@
             display: flex; align-items: center; justify-content: center; gap: 10px;
             padding: 40px; color: var(--text-secondary);
         }
+        .login-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center; }
+        .login-box { background:white;border-radius:12px;padding:32px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+        .login-box h3 { margin-bottom:20px;color:var(--primary); }
+        .login-box input { width:100%;padding:10px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:12px;font-size:14px; }
+        .login-box input:focus { outline:none;border-color:var(--primary); }
+        .login-error { color:var(--danger);font-size:13px;margin-bottom:8px;display:none; }
+        .admin-only { display:none; }
     </style>
 </head>
 <body>
@@ -339,7 +349,8 @@
         </div>
     </div>
     <div class="header-right">
-        <div class="admin-badge">👤 管理员</div>
+        <span id="live-clock" style="font-size:14px;margin-right:12px;opacity:0.9"></span>
+        <span id="admin-btn" onclick="handleAdminClick()" style="cursor:pointer;color:white;font-size:14px">👤 登录</span>
     </div>
 </div>
 
@@ -365,7 +376,7 @@
         <div class="panel">
             <div class="panel-header">
                 <h3>📋 学校列表</h3>
-                <button class="btn btn-primary" onclick="openSchoolModal()">+ 添加学校</button>
+                <button class="btn btn-primary admin-only" onclick="openSchoolModal()">+ 添加学校</button>
             </div>
             <div class="panel-body no-padding">
                 <div class="table-wrapper">
@@ -395,10 +406,10 @@
             <div class="panel-header">
                 <h3>🔍 课程筛选</h3>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                    <button class="btn btn-outline" onclick="downloadTemplate()">📥 下载模板</button>
-                    <button class="btn btn-success" onclick="document.getElementById('excel-file-input').click()">📂 导入Excel</button>
-                    <button class="btn btn-primary" onclick="openCourseModal()">+ 添加课程</button>
-                    <button class="btn btn-danger" onclick="clearAllCourses()">🗑 清空全部</button>
+                    <button class="btn btn-outline admin-only" onclick="downloadTemplate()">📥 下载模板</button>
+                    <button class="btn btn-success admin-only" onclick="document.getElementById('excel-file-input').click()">📂 导入Excel</button>
+                    <button class="btn btn-primary admin-only" onclick="openCourseModal()">+ 添加课程</button>
+                    <button class="btn btn-danger admin-only" onclick="clearAllCourses()">🗑 清空全部</button>
                     <span style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;margin-left:4px;">☁️ 云端已同步</span>
                 </div>
             </div>
@@ -426,6 +437,17 @@
                     <select id="filter-teaching-mode">
                         <option value="">全部</option>
                         <option>授课式</option><option>研究式</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>学位</label>
+                    <select id="filter-degree" onchange="filterCourses()">
+                        <option value="">全部学位</option>
+                        <option value="高级文凭">高级文凭</option>
+                        <option value="副学士">副学士</option>
+                        <option value="学士">学士</option>
+                        <option value="硕士">硕士</option>
+                        <option value="博士">博士</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -651,6 +673,21 @@
                             <option value="">请选择</option>
                             <option>本地生/非本地生</option>
                             <option>仅本地生</option><option>仅非本地生</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>学位</label>
+                        <select id="course-degree">
+                            <option value="">请选择</option>
+                            <option>高级文凭</option><option>副学士</option><option>学士</option>
+                            <option>硕士</option><option>博士</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>授课形式</label>
+                        <select id="course-format">
+                            <option value="">请选择</option>
+                            <option>面授</option><option>遥距</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -901,6 +938,7 @@ function renderSchools() {
     const tbody = document.getElementById('schools-tbody');
     if (schoolsData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">🏫</div><p>暂无学校数据</p></div></td></tr>';
+        updateAdminUI();
         return;
     }
     tbody.innerHTML = schoolsData.map((s, i) => `
@@ -912,11 +950,12 @@ function renderSchools() {
             <td>${s.website ? `<a href="${s.website}" target="_blank" class="clickable">🔗 访问</a>` : '-'}</td>
             <td><span class="badge badge-info">授课式 ${s.taught_count}</span> <span class="badge badge-accent">研究式 ${s.research_count}</span></td>
             <td>
-                <button class="btn btn-outline btn-xs" onclick="editSchool(${s.id})">✏️ 编辑</button>
-                <button class="btn btn-danger btn-xs" onclick="deleteSchool(${s.id}, '${s.name_cn}')">🗑 删除</button>
+                <button class="btn btn-outline btn-xs admin-only" onclick="editSchool(${s.id})">✏️ 编辑</button>
+                <button class="btn btn-danger btn-xs admin-only" onclick="deleteSchool(${s.id}, '${s.name_cn}')">🗑 删除</button>
             </td>
         </tr>
     `).join('');
+    updateAdminUI();
 }
 
 function updateSchoolStats() {
@@ -1030,6 +1069,7 @@ async function filterCourses() {
     const studyMode = document.getElementById('filter-study-mode').value;
     const academicYear = document.getElementById('filter-academic-year').value;
     const identity = document.getElementById('filter-identity').value;
+    const degree = document.getElementById('filter-degree')?.value || '';
     const tuitionMin = document.getElementById('filter-tuition-min').value;
     const tuitionMax = document.getElementById('filter-tuition-max').value;
     const deadlineSort = document.getElementById('filter-deadline-sort').value;
@@ -1042,6 +1082,7 @@ async function filterCourses() {
     if (studyMode) params.append('study_mode', studyMode);
     if (academicYear) params.append('academic_year', academicYear);
     if (identity) params.append('student_identity', identity);
+    if (degree) params.append('degree', degree);
     if (tuitionMin) params.append('tuition_min', tuitionMin);
     if (tuitionMax) params.append('tuition_max', tuitionMax);
     if (deadlineSort) params.append('deadline_sort', deadlineSort);
@@ -1059,6 +1100,7 @@ function renderCourses() {
     const tbody = document.getElementById('courses-tbody');
     if (allCourses.length === 0) {
         tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
+        updateAdminUI();
         return;
     }
     tbody.innerHTML = allCourses.map(c => {
@@ -1078,19 +1120,22 @@ function renderCourses() {
             <td style="font-size:12px;line-height:1.6">${c.tuition_display||'—'}</td>
             <td style="font-size:12px;line-height:1.6">${c.deadline_display||'—'}</td>
             <td>
-                <button class="btn btn-outline btn-xs" onclick="editCourse(${c.id})">✏️</button>
-                <button class="btn btn-danger btn-xs" onclick="deleteCourse(${c.id}, '${c.course_name_cn}')">🗑</button>
+                <button class="btn btn-outline btn-xs admin-only" onclick="editCourse(${c.id})">✏️</button>
+                <button class="btn btn-danger btn-xs admin-only" onclick="deleteCourse(${c.id}, '${c.course_name_cn}')">🗑</button>
             </td>
         </tr>`;
     }).join('');
+    updateAdminUI();
 }
 
 function updateCourseStats() {
     document.getElementById('course-stats').innerHTML = `
-        <div class="stat-card"><div class="stat-icon green">📚</div><div><div class="stat-value">${allCourses.length}</div><div class="stat-label">匹配课程</div></div></div>
-        <div class="stat-card"><div class="stat-icon blue">🏫</div><div><div class="stat-value">${new Set(allCourses.map(c => c.school_id)).size}</div><div class="stat-label">涉及院校</div></div></div>
-        <div class="stat-card"><div class="stat-icon amber">📖</div><div><div class="stat-value">${allCourses.filter(c => c.teaching_mode === '授课式').length}</div><div class="stat-label">授课式课程</div></div></div>
-        <div class="stat-card"><div class="stat-icon purple">🔬</div><div><div class="stat-value">${allCourses.filter(c => c.teaching_mode === '研究式').length}</div><div class="stat-label">研究式课程</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue">📚</div><div><div class="stat-value" id="stat-total">${allCourses.length}</div><div class="stat-label">收录课程总数</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">📘</div><div><div class="stat-value" id="stat-bachelor">${allCourses.filter(c => c.degree === '学士').length}</div><div class="stat-label">学士</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value" id="stat-master">${allCourses.filter(c => c.degree === '硕士').length}</div><div class="stat-label">硕士</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">🔬</div><div><div class="stat-value" id="stat-doctor">${allCourses.filter(c => c.degree === '博士').length}</div><div class="stat-label">博士</div></div></div>
+        <div class="stat-card"><div class="stat-icon teal">📋</div><div><div class="stat-value" id="stat-associate">${allCourses.filter(c => c.degree === '副学士').length}</div><div class="stat-label">副学士</div></div></div>
+        <div class="stat-card"><div class="stat-icon gray">📄</div><div><div class="stat-value" id="stat-diploma">${allCourses.filter(c => c.degree === '高级文凭').length}</div><div class="stat-label">高级文凭</div></div></div>
     `;
 }
 
@@ -1103,6 +1148,7 @@ function resetCourseFilters() {
     document.getElementById('filter-study-mode').value = '';
     document.getElementById('filter-academic-year').value = '';
     document.getElementById('filter-identity').value = '';
+    document.getElementById('filter-degree').value = '';
     document.getElementById('filter-tuition-min').value = '';
     document.getElementById('filter-tuition-max').value = '';
     document.getElementById('filter-deadline-sort').value = '';
@@ -1157,6 +1203,8 @@ function openCourseModal(id = null) {
             document.getElementById('course-duration-pt').value = c.study_duration_pt || '';
             document.getElementById('course-academic-year').value = c.academic_year;
             document.getElementById('course-identity').value = c.student_identity;
+            document.getElementById('course-degree').value = c.degree || '';
+            document.getElementById('course-format').value = c.teaching_format || '';
             document.getElementById('course-tuition-local').value = c.tuition_local || '';
             document.getElementById('course-tuition-nonlocal').value = c.tuition_non_local || '';
             document.getElementById('course-deadline-local').value = c.deadline_local || '';
@@ -1245,6 +1293,8 @@ async function saveCourse() {
         course_description: document.getElementById('course-desc').value.trim(),
         course_page_url: document.getElementById('course-page-url').value.trim(),
         course_brochure_url: document.getElementById('course-brochure-url').value.trim(),
+        degree: document.getElementById('course-degree').value,
+        teaching_format: document.getElementById('course-format').value,
     };
 
     if (!data.school_id || !data.subject_category || !data.course_name_cn || !data.teaching_mode ||
@@ -1378,6 +1428,10 @@ async function viewCourseDetail(id) {
                 <div class="detail-item"><div class="detail-label">课程简章</div><div class="detail-value">${c.course_brochure_url ? `<a href="${c.course_brochure_url}" target="_blank" class="clickable">🔗 ${c.course_brochure_url}</a>` : '-'}</div></div>
                 <div class="detail-item detail-full"><div class="detail-label">学校官网</div><div class="detail-value">${c.school_website ? `<a href="${c.school_website}" target="_blank" class="clickable">🔗 ${c.school_website}</a>` : '-'}</div></div>
             </div>
+            ${isAdmin() ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+                <button class="btn btn-outline" onclick="closeDetailModal();editCourse(${c.id})">✏️ 编辑</button>
+                <button class="btn btn-danger" onclick="closeDetailModal();deleteCourse(${c.id}, '${c.course_name_cn}')">🗑 删除</button>
+            </div>` : ''}
         `;
 
         document.getElementById('detail-modal-overlay').classList.add('show');
@@ -1822,6 +1876,90 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 document.addEventListener('DOMContentLoaded', () => {
     loadSchools();
 });
+
+// ============================================================
+// 实时时钟
+// ============================================================
+function updateClock() {
+    const now = new Date();
+    document.getElementById('live-clock').textContent = now.toLocaleString('zh-HK', {hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'2-digit',day:'2-digit'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ============================================================
+// 管理员登录
+// ============================================================
+const ADMIN_CREDS = { user: 'allenlautik', pass: 'Al19930827' };
+
+function isAdmin() {
+    return sessionStorage.getItem('admin_logged_in') === 'true';
+}
+
+function handleAdminClick() {
+    if (isAdmin()) {
+        sessionStorage.removeItem('admin_logged_in');
+        updateAdminUI();
+        renderCourses();
+    } else {
+        showLoginModal();
+    }
+}
+
+function showLoginModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'login-overlay';
+    overlay.id = 'login-overlay';
+    overlay.innerHTML = `
+        <div class="login-box">
+            <h3>🔐 管理员登录</h3>
+            <input type="text" id="login-user" placeholder="用户名" autocomplete="off">
+            <input type="password" id="login-pass" placeholder="密码">
+            <div class="login-error" id="login-error"></div>
+            <button class="btn btn-primary" style="width:100%" onclick="doLogin()">登入</button>
+            <button class="btn" style="width:100%;margin-top:8px" onclick="closeLogin()">取消</button>
+        </div>
+    `;
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeLogin();
+    });
+    document.body.appendChild(overlay);
+    setTimeout(() => document.getElementById('login-user').focus(), 100);
+}
+
+function closeLogin() {
+    const el = document.getElementById('login-overlay');
+    if (el) el.remove();
+}
+
+function doLogin() {
+    const user = document.getElementById('login-user').value;
+    const pass = document.getElementById('login-pass').value;
+    if (user === ADMIN_CREDS.user && pass === ADMIN_CREDS.pass) {
+        sessionStorage.setItem('admin_logged_in', 'true');
+        closeLogin();
+        updateAdminUI();
+        renderCourses();
+    } else {
+        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('login-error').textContent = '用户名或密码错误';
+    }
+}
+
+function updateAdminUI() {
+    const btn = document.getElementById('admin-btn');
+    if (isAdmin()) {
+        btn.textContent = '👤 管理员 (退出)';
+        btn.style.color = '#ffd700';
+    } else {
+        btn.textContent = '👤 登录';
+        btn.style.color = 'white';
+    }
+    document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = isAdmin() ? '' : 'none';
+    });
+}
+updateAdminUI();
 </script>
 </body>
 </html>

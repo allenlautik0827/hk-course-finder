@@ -117,6 +117,8 @@ def init_db():
                 teaching_language TEXT NOT NULL,
                 academic_year TEXT NOT NULL,
                 student_identity TEXT NOT NULL,
+                degree TEXT DEFAULT '',
+                teaching_format TEXT DEFAULT '',
                 tuition_local REAL DEFAULT 0,
                 tuition_non_local REAL DEFAULT 0,
                 deadline_local TEXT DEFAULT '',
@@ -147,6 +149,8 @@ def init_db():
                 FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
             )
         """)
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS degree TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS teaching_format TEXT DEFAULT ''")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS audit_log (
                 id SERIAL PRIMARY KEY,
@@ -192,6 +196,8 @@ def init_db():
                 teaching_language TEXT NOT NULL,
                 academic_year TEXT NOT NULL,
                 student_identity TEXT NOT NULL,
+                degree TEXT DEFAULT '',
+                teaching_format TEXT DEFAULT '',
                 tuition_local REAL DEFAULT 0,
                 tuition_non_local REAL DEFAULT 0,
                 deadline_local TEXT DEFAULT '',
@@ -235,6 +241,14 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         ''')
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN degree TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN teaching_format TEXT DEFAULT ''")
+        except Exception:
+            pass
         db.commit()
         db.close()
 
@@ -556,6 +570,8 @@ def format_course(c):
         'teaching_language': c['teaching_language'],
         'academic_year': c['academic_year'],
         'student_identity': c['student_identity'],
+        'degree': c.get('degree', ''),
+        'teaching_format': c.get('teaching_format', ''),
         'tuition_local': tl_val,
         'tuition_non_local': tn_val,
         'tuition_display': tuition,
@@ -608,6 +624,10 @@ def get_courses():
     if request.args.get('subject_category'):
         query += " AND c.subject_category = ?"
         params.append(request.args['subject_category'])
+
+    if request.args.get('degree'):
+        query += " AND c.degree = ?"
+        params.append(request.args['degree'])
 
     if request.args.get('teaching_mode'):
         query += " AND c.teaching_mode = ?"
@@ -700,7 +720,7 @@ def add_course():
             INSERT INTO courses (
                 course_code, school_id, subject_category, course_name_cn, course_name_en,
                 teaching_mode, study_mode, study_duration_ft, study_duration_pt,
-                teaching_language, academic_year, student_identity,
+                teaching_language, academic_year, student_identity, degree, teaching_format,
                 tuition_local, tuition_non_local, deadline_local, deadline_non_local,
                 qf_level, qr_number, education_requirement,
                 chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
@@ -708,13 +728,14 @@ def add_course():
                 english_toefl_ibt, english_ielts, english_cet4, english_other,
                 other_requirements, interview_required,
                 course_description, course_page_url, course_brochure_url
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             new_code,
             data['school_id'], data['subject_category'], data['course_name_cn'], data.get('course_name_en', ''),
             data['teaching_mode'], data['study_mode'],
             data.get('study_duration_ft'), data.get('study_duration_pt'),
             data['teaching_language'], data['academic_year'], data['student_identity'],
+            data.get('degree', ''), data.get('teaching_format', ''),
             data.get('tuition_local', 0), data.get('tuition_non_local', 0),
             data.get('deadline_local', ''), data.get('deadline_non_local', ''),
             data.get('qf_level', ''), data.get('qr_number', ''),
@@ -822,7 +843,7 @@ def batch_sync_courses():
                 INSERT INTO courses (
                     course_code, school_id, subject_category, course_name_cn, course_name_en,
                     teaching_mode, study_mode, study_duration_ft, study_duration_pt,
-                    teaching_language, academic_year, student_identity,
+                    teaching_language, academic_year, student_identity, degree, teaching_format,
                     tuition_local, tuition_non_local, deadline_local, deadline_non_local,
                     qf_level, qr_number, education_requirement,
                     chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
@@ -830,13 +851,14 @@ def batch_sync_courses():
                     english_toefl_ibt, english_ielts, english_cet4, english_other,
                     other_requirements, interview_required,
                     course_description, course_page_url, course_brochure_url
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 new_code, school_id,
                 get_str('subject_category'), get_str('course_name_cn'), get_str('course_name_en'),
                 get_str('teaching_mode'), get_str('study_mode'),
                 get_num_nullable('study_duration_ft'), get_num_nullable('study_duration_pt'),
                 get_str('teaching_language'), get_str('academic_year'), get_str('student_identity'),
+                get_str('degree'), get_str('teaching_format'),
                 get_num('tuition_local'), get_num('tuition_non_local'),
                 get_str('deadline_local'), get_str('deadline_non_local'),
                 get_str('qf_level'), get_str('qr_number'), get_str('education_requirement'),
@@ -877,6 +899,7 @@ def update_course(course_id):
         'school_id', 'subject_category', 'course_name_cn', 'course_name_en',
         'teaching_mode', 'study_mode', 'study_duration_ft', 'study_duration_pt',
         'teaching_language', 'academic_year', 'student_identity',
+        'degree', 'teaching_format',
         'tuition_local', 'tuition_non_local', 'deadline_local', 'deadline_non_local',
         'qf_level', 'qr_number', 'education_requirement',
         'chinese_dse', 'chinese_gaokao', 'chinese_hsk', 'chinese_other',
@@ -907,7 +930,7 @@ def update_course(course_id):
         UPDATE courses SET
             school_id=?, subject_category=?, course_name_cn=?, course_name_en=?,
             teaching_mode=?, study_mode=?, study_duration_ft=?, study_duration_pt=?,
-            teaching_language=?, academic_year=?, student_identity=?,
+            teaching_language=?, academic_year=?, student_identity=?, degree=?, teaching_format=?,
             tuition_local=?, tuition_non_local=?, deadline_local=?, deadline_non_local=?,
             qf_level=?, qr_number=?, education_requirement=?,
             chinese_exempt=?, chinese_dse=?, chinese_gaokao=?, chinese_hsk=?, chinese_other=?,
@@ -920,7 +943,7 @@ def update_course(course_id):
     """, (
         gv('school_id'), gv('subject_category'), gv('course_name_cn'), gv('course_name_en'),
         gv('teaching_mode'), gv('study_mode'), gv('study_duration_ft'), gv('study_duration_pt'),
-        gv('teaching_language'), gv('academic_year'), gv('student_identity'),
+        gv('teaching_language'), gv('academic_year'), gv('student_identity'), gv('degree'), gv('teaching_format'),
         gv('tuition_local'), gv('tuition_non_local'), gv('deadline_local'), gv('deadline_non_local'),
         gv('qf_level'), gv('qr_number'), gv('education_requirement'),
         1 if data.get('chinese_exempt', old['chinese_exempt']) else 0,
