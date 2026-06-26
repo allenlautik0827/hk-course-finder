@@ -152,6 +152,19 @@
         .badge-warning { background: #fef5e7; color: var(--warning); }
         .badge-info { background: #eaf2f8; color: var(--info); }
         .badge-accent { background: #fdf6e8; color: #b8860b; }
+        /* 学科颜色映射 */
+        [data-subject="文科"] { background: #fff3e0; color: #e65100; }
+        [data-subject="社科"] { background: #e8eaf6; color: #283593; }
+        [data-subject="商科"] { background: #e8f8ef; color: #0d7377; }
+        [data-subject="理科"] { background: #e3f2fd; color: #1565c0; }
+        [data-subject="工程"] { background: #fce4ec; color: #ad1457; }
+        [data-subject="医学"] { background: #ffebee; color: #c62828; }
+        [data-subject="艺术"] { background: #f3e5f5; color: #6a1b9a; }
+        [data-subject="教育"] { background: #fef5e7; color: #e67e22; }
+        [data-subject="法学"] { background: #fce4ec; color: #ad1457; }
+        /* 授课方式颜色映射 */
+        [data-mode="授课式"] { background: #fdf6e8; color: #b8860b; }
+        [data-mode="研究式"] { background: #ede7f6; color: #4527a0; }
         /* Filter Bar */
         .filter-bar {
             display: flex; flex-wrap: wrap; gap: 12px;
@@ -1054,8 +1067,8 @@ function renderCourses() {
         return `<tr>
             <td><span class="badge badge-primary">${c.course_code}</span></td>
             <td><strong>${c.school_abbr}</strong></td>
-            <td><span class="badge badge-info">${c.subject_category}</span></td>
-            <td><span class="badge badge-accent">${c.teaching_mode}</span></td>
+            <td><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></td>
+            <td><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
             <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
             <td>${c.teaching_language}</td>
@@ -1304,8 +1317,8 @@ async function viewCourseDetail(id) {
             <div class="detail-section"><h4>📌 课程概要</h4></div>
             <div class="detail-grid">
                 <div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${c.school_name_cn}（${c.school_name_en}）</div></div>
-                <div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge badge-info">${c.subject_category}</span></div></div>
-                <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value">${c.teaching_mode}</div></div>
+                <div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></div></div>
+                <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></div></div>
                 <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode}</div></div>
                 <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">
                     ${c.study_duration_display || (() => {

@@ -52,6 +52,19 @@ table tbody tr:hover{background:#f8fafd}
 .badge-info{background:#eaf2f8;color:var(--info)}
 .badge-accent{background:#fdf6e8;color:#b8860b}
 .badge-warning{background:#fef5e7;color:var(--warning)}
+/* 学科颜色映射 */
+[data-subject="文科"]{background:#fff3e0;color:#e65100}
+[data-subject="社科"]{background:#e8eaf6;color:#283593}
+[data-subject="商科"]{background:#e8f8ef;color:#0d7377}
+[data-subject="理科"]{background:#e3f2fd;color:#1565c0}
+[data-subject="工程"]{background:#fce4ec;color:#ad1457}
+[data-subject="医学"]{background:#ffebee;color:#c62828}
+[data-subject="艺术"]{background:#f3e5f5;color:#6a1b9a}
+[data-subject="教育"]{background:#fef5e7;color:#e67e22}
+[data-subject="法学"]{background:#fce4ec;color:#ad1457}
+/* 授课方式颜色映射 */
+[data-mode="授课式"]{background:#fdf6e8;color:#b8860b}
+[data-mode="研究式"]{background:#ede7f6;color:#4527a0}
 .text-muted{color:var(--text-secondary);font-size:12px}
 .filter-bar{display:flex;flex-wrap:wrap;gap:12px;padding:16px 20px;align-items:flex-end}
 .filter-group{display:flex;flex-direction:column;gap:4px}
@@ -550,8 +563,8 @@ function renderCourses(){
         return `<tr>
 <td><span class="badge badge-primary">${esc(c.course_code)}</span></td>
 <td><strong>${s?s.abbreviation:'—'}</strong></td>
-<td><span class="badge badge-info">${esc(c.subject_category)}</span></td>
-<td><span class="badge badge-accent">${esc(c.teaching_mode)}</span></td>
+<td><span class="badge" data-subject="${esc(c.subject_category)}">${esc(c.subject_category)}</span></td>
+<td><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></td>
 <td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
 <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
 <td>${esc(c.teaching_language)}</td>
@@ -729,8 +742,8 @@ function viewDetail(id){
 <div class="detail-section"><h4>📌 课程概要</h4></div>
 <div class="detail-grid">
 <div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${s?s.name_cn+'（'+s.name_en+'）':'—'}</div></div>
-<div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge badge-info">${esc(c.subject_category)}</span></div></div>
-<div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value">${esc(c.teaching_mode)}</div></div>
+<div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge" data-subject="${esc(c.subject_category)}">${esc(c.subject_category)}</span></div></div>
+<div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></div></div>
 <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${esc(c.study_mode)}</div></div>
 <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${dur}</div></div>
 <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${esc(c.academic_year)}</div></div>
