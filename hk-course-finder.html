@@ -939,9 +939,12 @@ async function handleExcelUpload(event) {
         if (rows.length === 0) { toast('Excel 文件中没有数据', 'error'); return; }
 
         const schoolMap = {};
+        const schoolList = [];
         DB.schools.forEach(s => {
             schoolMap[s.abbreviation.toUpperCase()] = s.id;
             schoolMap[s.name_cn] = s.id;
+            schoolMap[s.name_en.toUpperCase()] = s.id;
+            schoolList.push(s.abbreviation + '（' + s.name_cn + '）');
         });
 
         const parsedRows = [];
@@ -961,9 +964,10 @@ async function handleExcelUpload(event) {
             if (!hasAnyData) return;
 
             if (course.school_abbreviation) {
-                const schoolId = schoolMap[course.school_abbreviation.toUpperCase()] || schoolMap[course.school_abbreviation];
+                const key = course.school_abbreviation.toUpperCase();
+                const schoolId = schoolMap[key] || schoolMap[course.school_abbreviation];
                 if (schoolId) { course.school_id = schoolId; }
-                else { errors.push('第 ' + (idx + 2) + ' 行：找不到学校「' + course.school_abbreviation + '」'); }
+                else { errors.push('第 ' + (idx + 2) + ' 行：找不到学校「' + course.school_abbreviation + '」—— 可选学校：' + schoolList.join('、')); }
             }
 
             if (course.tuition_local) course.tuition_local = parseFloat(String(course.tuition_local).replace(/,/g, '')) || 0;
@@ -1063,6 +1067,7 @@ function confirmImport() {
 
     let successCount = 0;
     let failCount = 0;
+    const failDetails = [];
 
     for (const course of courses) {
         try {
@@ -1074,6 +1079,7 @@ function confirmImport() {
             successCount++;
         } catch (e) {
             failCount++;
+            failDetails.push('第 ' + (course._rowNum || '?') + ' 行（' + (course.course_name_cn || '未知') + '）：' + e.message);
         }
     }
 
@@ -1082,11 +1088,12 @@ function confirmImport() {
     btn.textContent = '✅ 确认导入';
 
     if (failCount === 0) {
-        toast('成功导入 ' + successCount + ' 门课程！');
+        toast('✅ 成功导入 ' + successCount + ' 门课程！');
         closeImportModal();
         renderCourses();
     } else {
-        toast('导入完成：成功 ' + successCount + ' 条，失败 ' + failCount + ' 条', 'error');
+        const msg = '导入完成：成功 ' + successCount + ' 条，失败 ' + failCount + ' 条\\n\\n失败详情：\\n' + failDetails.join('\\n');
+        alert(msg);
         if (successCount > 0) { renderCourses(); }
     }
 }

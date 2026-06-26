@@ -1606,9 +1606,12 @@ async function handleExcelUpload(event) {
         }
 
         const schoolMap = {};
+        const schoolList = [];
         schoolsData.forEach(s => {
             schoolMap[s.abbreviation.toUpperCase()] = s.id;
             schoolMap[s.name_cn] = s.id;
+            schoolMap[s.name_en.toUpperCase()] = s.id;
+            schoolList.push(s.abbreviation + '（' + s.name_cn + '）');
         });
 
         // 解析并映射每一行
@@ -1633,11 +1636,12 @@ async function handleExcelUpload(event) {
 
             // 学校简称 → school_id
             if (course.school_abbreviation) {
-                const schoolId = schoolMap[course.school_abbreviation.toUpperCase()] || schoolMap[course.school_abbreviation];
+                const key = course.school_abbreviation.toUpperCase();
+                const schoolId = schoolMap[key] || schoolMap[course.school_abbreviation];
                 if (schoolId) {
                     course.school_id = schoolId;
                 } else {
-                    errors.push(`第 ${idx + 2} 行：找不到学校「${course.school_abbreviation}」`);
+                    errors.push(`第 ${idx + 2} 行：找不到学校「${course.school_abbreviation}」—— 可选学校：${schoolList.join('、')}`);
                 }
             }
 
