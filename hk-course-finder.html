@@ -516,15 +516,14 @@ function renderCourses(){
     if(!list.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
     tbody.innerHTML=list.map(c=>{
         const s=getSchool(c.school_id);
+        const fmtYr=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
         let dur='—';
-        if(c.study_mode==='全日制/非全日制'){
-            const ft=c.study_duration_ft?c.study_duration_ft+'年':'—';
-            const pt=c.study_duration_pt?c.study_duration_pt+'年':'—';
-            dur=ft+'/'+pt;
+        if(c.study_mode==='全日制/非全日制'||c.study_mode==='全日制/兼读制'){
+            dur=fmtYr(c.study_duration_ft)+'/'+fmtYr(c.study_duration_pt);
         } else if(c.study_mode==='全日制'){
-            dur=c.study_duration_ft?c.study_duration_ft+'年':'—';
+            dur=c.study_duration_ft!=null?fmtYr(c.study_duration_ft):'—';
         } else {
-            dur=c.study_duration_pt?c.study_duration_pt+'年':'—';
+            dur=c.study_duration_pt!=null?fmtYr(c.study_duration_pt):'—';
         }
         const studyModeHtml=esc(c.study_mode).replace(/\//g,'<br>');
         const identityHtml=esc(c.student_identity).replace(/\//g,'<br>');
@@ -720,10 +719,11 @@ function viewDetail(id){
     const tn=c.tuition_non_local?'HKD'+Number(c.tuition_non_local).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
     const dl=c.deadline_local?fmtDate(c.deadline_local):'—';
     const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):'—';
+    const fmtYr2=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
     let dur='—';
-    if(c.study_mode==='全日制/非全日制')dur=(c.study_duration_ft?c.study_duration_ft+'年':'—')+' / '+(c.study_duration_pt?c.study_duration_pt+'年':'—');
-    else if(c.study_mode==='仅全日制')dur=c.study_duration_ft?c.study_duration_ft+'年':'—';
-    else dur=c.study_duration_pt?c.study_duration_pt+'年':'—';
+    if(c.study_mode==='全日制/非全日制'||c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'/'+fmtYr2(c.study_duration_pt);
+    else if(c.study_mode==='全日制')dur=c.study_duration_ft!=null?fmtYr2(c.study_duration_ft):'—';
+    else dur=c.study_duration_pt!=null?fmtYr2(c.study_duration_pt):'—';
 
     document.getElementById('dm-body').innerHTML=`
 <div class="detail-section"><h4>📌 课程概要</h4></div>

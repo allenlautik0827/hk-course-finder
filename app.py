@@ -496,14 +496,21 @@ def format_course(c):
     study_mode = c.get('study_mode', '')
     ft = c.get('study_duration_ft')
     pt = c.get('study_duration_pt')
+    def fmt_yr(v):
+        """将年数格式化为整数（去掉小数点），如 1.0 → '1'，1.5 → '1.5'"""
+        if v is None:
+            return '-'
+        iv = int(v) if v == int(v) else v
+        return str(iv)
+
     if study_mode in ('全日制/兼读制', '全日制/非全日制'):
-        ft_str = f"{ft}年" if ft else '-'
-        pt_str = f"{pt}年" if pt else '-'
-        study_duration = f"{ft_str}<br>{pt_str}"
+        ft_str = f"{fmt_yr(ft)}年" if ft else '-'
+        pt_str = f"{fmt_yr(pt)}年" if pt else '-'
+        study_duration = f"{ft_str}/{pt_str}"
     elif study_mode == '全日制':
-        study_duration = f"{ft}年" if ft else '-'
+        study_duration = f"{fmt_yr(ft)}年" if ft else '-'
     else:
-        study_duration = f"{pt}年" if pt else '-'
+        study_duration = f"{fmt_yr(pt)}年" if pt else '-'
 
     # 格式化学费
     tl_val = c.get('tuition_local') or 0

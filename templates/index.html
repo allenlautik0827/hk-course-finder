@@ -1308,8 +1308,12 @@ async function viewCourseDetail(id) {
                 <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value">${c.teaching_mode}</div></div>
                 <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode}</div></div>
                 <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">
-                    ${c.study_mode === '全日制/非全日制' ? (c.study_duration_ft || '-') + '年 / ' + (c.study_duration_pt || '-') + '年' :
-                      c.study_mode === '仅全日制' ? (c.study_duration_ft || '-') + '年' : (c.study_duration_pt || '-') + '年'}
+                    ${c.study_duration_display || (() => {
+                        const fmtYr = v => v == null ? '-' : (Number.isInteger(v) ? v : (v === Math.floor(v) ? Math.floor(v) : v)) + '年';
+                        if (c.study_mode === '全日制/非全日制' || c.study_mode === '全日制/兼读制') return fmtYr(c.study_duration_ft) + '/' + fmtYr(c.study_duration_pt);
+                        if (c.study_mode === '全日制') return fmtYr(c.study_duration_ft);
+                        return fmtYr(c.study_duration_pt);
+                    })()}
                 </div></div>
                 <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year}</div></div>
                 <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.student_identity}</div></div>
