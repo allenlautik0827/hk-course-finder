@@ -447,9 +447,9 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>学位</label>
+                    <label>学历/文凭</label>
                     <select id="filter-degree" onchange="filterCourses()">
-                        <option value="">全部学位</option>
+                        <option value="">全部</option>
                         <option value="深造文凭">深造文凭</option>
                         <option value="高级文凭">高级文凭</option>
                         <option value="副学士">副学士</option>
@@ -515,7 +515,7 @@
                                 <th>学校</th>
                                 <th>学科</th>
                                 <th>授课方式</th>
-                                <th>学位</th>
+                                <th>学历/文凭</th>
                                 <th>课程名称</th>
                                 <th>学制</th>
                                 <th>授课语言</th>
@@ -687,7 +687,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>学位</label>
+                        <label>学历/文凭</label>
                         <select id="course-degree">
                             <option value="">请选择</option>
                             <option>深造文凭</option><option>高级文凭</option><option>副学士</option><option>学士</option>
@@ -1172,12 +1172,12 @@ function renderCourses() {
 function updateCourseStats() {
     document.getElementById('course-stats').innerHTML = `
         <div class="stat-card"><div class="stat-icon blue">📚</div><div><div class="stat-value" id="stat-total">${allCourses.length}</div><div class="stat-label">收录课程总数</div></div></div>
-        <div class="stat-card"><div class="stat-icon orange">📘</div><div><div class="stat-value" id="stat-bachelor">${allCourses.filter(c => c.degree === '学士').length}</div><div class="stat-label">学士</div></div></div>
-        <div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value" id="stat-master">${allCourses.filter(c => c.degree === '硕士').length}</div><div class="stat-label">硕士</div></div></div>
-        <div class="stat-card"><div class="stat-icon orange">🎓</div><div><div class="stat-value" id="stat-advanced-diploma">${allCourses.filter(c => c.degree === '深造文凭').length}</div><div class="stat-label">深造文凭</div></div></div>
-        <div class="stat-card"><div class="stat-icon red">🔬</div><div><div class="stat-value" id="stat-doctor">${allCourses.filter(c => c.degree === '博士').length}</div><div class="stat-label">博士</div></div></div>
-        <div class="stat-card"><div class="stat-icon teal">📋</div><div><div class="stat-value" id="stat-associate">${allCourses.filter(c => c.degree === '副学士').length}</div><div class="stat-label">副学士</div></div></div>
         <div class="stat-card"><div class="stat-icon gray">📄</div><div><div class="stat-value" id="stat-diploma">${allCourses.filter(c => c.degree === '高级文凭').length}</div><div class="stat-label">高级文凭</div></div></div>
+        <div class="stat-card"><div class="stat-icon teal">📋</div><div><div class="stat-value" id="stat-associate">${allCourses.filter(c => c.degree === '副学士').length}</div><div class="stat-label">副学士</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">📘</div><div><div class="stat-value" id="stat-bachelor">${allCourses.filter(c => c.degree === '学士').length}</div><div class="stat-label">学士</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">🎓</div><div><div class="stat-value" id="stat-advanced-diploma">${allCourses.filter(c => c.degree === '深造文凭').length}</div><div class="stat-label">深造文凭</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value" id="stat-master">${allCourses.filter(c => c.degree === '硕士').length}</div><div class="stat-label">硕士</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">🔬</div><div><div class="stat-value" id="stat-doctor">${allCourses.filter(c => c.degree === '博士').length}</div><div class="stat-label">博士</div></div></div>
     `;
 }
 
@@ -1443,7 +1443,7 @@ async function viewCourseDetail(id) {
                     })()}
                 </div></div>
                 <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year}</div></div>
-                <div class="detail-item"><div class="detail-label">学位</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
+                <div class="detail-item"><div class="detail-label">学历/文凭</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
                 <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.student_identity}</div></div>
                 <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language}</div></div>
                 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${c.teaching_format || '—'}</div></div>
@@ -1587,7 +1587,7 @@ const EXCEL_COLUMN_MAP = {
     '课程名称(英文)': 'course_name_en',
     '英文简称': 'course_name_en',
     '授课方式': 'teaching_mode',
-    '学位': 'degree',
+    '学历/文凭': 'degree',
     '授课形式': 'teaching_format',
     '学制': 'study_mode',
     '授课语言': 'teaching_language',
@@ -1694,7 +1694,7 @@ function downloadTemplate() {
             '课程名称（中文）': '金融学硕士',
             '课程名称（英文）': 'MFin',
             '授课方式': '授课式',
-            '学位': '硕士',
+            '学历/文凭': '硕士',
             '授课形式': '面授',
             '学制': '全日制/兼读制',
             '授课语言': '英语',
@@ -1741,7 +1741,7 @@ function downloadTemplate() {
             '课程名称（中文）': '计算机科学硕士',
             '课程名称（英文）': 'MSc CS',
             '授课方式': '授课式',
-            '学位': '硕士',
+            '学历/文凭': '硕士',
             '授课形式': '面授',
             '学制': '仅全日制',
             '授课语言': '英语',
@@ -1926,7 +1926,7 @@ function showImportPreview(rows, errors) {
     // 预览表格
     const displayFields = [
         ['school_abbreviation', '学校'], ['subject_category', '学科'], ['course_name_cn', '课程名称'],
-        ['teaching_mode', '授课方式'], ['degree', '学位'], ['teaching_format', '授课形式'], ['study_mode', '学制'], ['teaching_language', '语言'],
+        ['teaching_mode', '授课方式'], ['degree', '学历/文凭'], ['teaching_format', '授课形式'], ['study_mode', '学制'], ['teaching_language', '语言'],
         ['academic_year', '学年'], ['student_identity', '身份'],
         ['tuition_ft_local', '全日制学费(本地)'], ['tuition_ft_nonlocal', '全日制学费(非本地)'],
         ['tuition_pt_local', '兼读制学费(本地)'], ['tuition_pt_nonlocal', '兼读制学费(非本地)'],

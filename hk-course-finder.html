@@ -186,7 +186,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="filter-group"><label>学校名称</label><select id="f-school"><option value="">全部学校</option></select></div>
 <div class="filter-group"><label>学科分类</label><select id="f-subject"><option value="">全部学科</option><option>商科</option><option>工科</option><option>文科</option><option>社科</option><option>教育</option><option>法律</option><option>医科</option><option>理科</option></select></div>
 <div class="filter-group"><label>授课方式</label><select id="f-mode"><option value="">全部</option><option>授课式</option><option>研究式</option></select></div>
-<div class="filter-group"><label>学位</label><select id="filter-degree"><option value="">全部学位</option><option>深造文凭</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>硕士</option><option>博士</option></select></div>
+<div class="filter-group"><label>学历/文凭</label><select id="filter-degree"><option value="">全部</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>深造文凭</option><option>硕士</option><option>博士</option></select></div>
 <div class="filter-group"><label>课程名称</label><input type="text" id="f-name" placeholder="关键词检索…"></div>
 <div class="filter-group"><label>学制</label><select id="f-study-mode"><option value="">全部</option><option>全日制/兼读制</option><option>仅全日制</option><option>仅兼读制</option></select></div>
 <div class="filter-group"><label>学年</label><select id="f-year"><option value="">全部</option></select></div>
@@ -202,7 +202,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="panel">
 <div class="panel-header"><h3>📚 课程列表 <span id="course-count" class="text-muted"></span></h3></div>
 <div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
-<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学位</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>全日制学费（港币）</th><th>兼读制学费（港币）</th><th>截止报名（秋季）</th><th>截止报名（春季）</th><th>操作</th>
+<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学历/文凭</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>全日制学费（港币）</th><th>兼读制学费（港币）</th><th>截止报名（秋季）</th><th>截止报名（春季）</th><th>操作</th>
 </tr></thead><tbody id="courses-tbody"></tbody></table></div></div>
 </div></div>
 
@@ -261,7 +261,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="form-group" id="cm-pt-g"><label>兼读制修读时间（年）</label><input type="number" id="cm-dur-pt" step="0.5" min="0.5" placeholder="如：2"></div>
 <div class="form-group"><label><span class="required">*</span> 学年</label><select id="cm-year"></select></div>
 <div class="form-group"><label><span class="required">*</span> 身份</label><select id="cm-identity"><option value="">请选择</option><option>本地生/非本地生</option><option>仅本地生</option><option>仅非本地生</option></select></div>
-<div class="form-group"><label>学位</label><select id="cm-degree"><option value="">请选择</option><option>深造文凭</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>硕士</option><option>博士</option></select></div>
+<div class="form-group"><label>学历/文凭</label><select id="cm-degree"><option value="">请选择</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>深造文凭</option><option>硕士</option><option>博士</option></select></div>
 <div class="form-group"><label>授课形式</label><select id="cm-format"><option value="">请选择</option><option>面授</option><option>遥距</option></select></div>
 <div class="form-group"><label>全日制学费 - 本地生 (HKD)</label><input type="number" id="cm-tuition-ft-local" step="1000" min="0"></div>
 <div class="form-group"><label>全日制学费 - 非本地生 (HKD)</label><input type="number" id="cm-tuition-ft-nonlocal" step="1000" min="0"></div>
@@ -636,12 +636,12 @@ function renderCourses(){
 function updateCourseStats(list){
     document.getElementById('course-stats').innerHTML=
     `<div class="stat-card"><div class="stat-icon blue">📚</div><div><div class="stat-value" id="stat-total">0</div><div class="stat-label">收录课程总数</div></div></div>
-<div class="stat-card"><div class="stat-icon orange">📘</div><div><div class="stat-value" id="stat-bachelor">0</div><div class="stat-label">学士</div></div></div>
-<div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value" id="stat-master">0</div><div class="stat-label">硕士</div></div></div>
-<div class="stat-card"><div class="stat-icon red">🔬</div><div><div class="stat-value" id="stat-doctor">0</div><div class="stat-label">博士</div></div></div>
-<div class="stat-card"><div class="stat-icon orange">🎓</div><div><div class="stat-value" id="stat-advanced-diploma">0</div><div class="stat-label">深造文凭</div></div></div>
+<div class="stat-card"><div class="stat-icon gray">📄</div><div><div class="stat-value" id="stat-diploma">0</div><div class="stat-label">高级文凭</div></div></div>
 <div class="stat-card"><div class="stat-icon teal">📋</div><div><div class="stat-value" id="stat-associate">0</div><div class="stat-label">副学士</div></div></div>
-<div class="stat-card"><div class="stat-icon gray">📄</div><div><div class="stat-value" id="stat-diploma">0</div><div class="stat-label">高级文凭</div></div></div>`;
+<div class="stat-card"><div class="stat-icon orange">📘</div><div><div class="stat-value" id="stat-bachelor">0</div><div class="stat-label">学士</div></div></div>
+<div class="stat-card"><div class="stat-icon orange">🎓</div><div><div class="stat-value" id="stat-advanced-diploma">0</div><div class="stat-label">深造文凭</div></div></div>
+<div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value" id="stat-master">0</div><div class="stat-label">硕士</div></div></div>
+<div class="stat-card"><div class="stat-icon red">🔬</div><div><div class="stat-value" id="stat-doctor">0</div><div class="stat-label">博士</div></div></div>`;
     document.getElementById('stat-total').textContent=list.length;
     document.getElementById('stat-bachelor').textContent=list.filter(c=>c.degree==='学士').length;
     document.getElementById('stat-master').textContent=list.filter(c=>c.degree==='硕士').length;
@@ -833,7 +833,7 @@ function viewDetail(id){
 <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${dur}</div></div>
 <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${esc(c.academic_year)}</div></div>
 <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${esc(c.student_identity)}</div></div>
-<div class="detail-item"><div class="detail-label">学位</div><div class="detail-value"><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></div></div>
+<div class="detail-item"><div class="detail-label">学历/文凭</div><div class="detail-value"><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></div></div>
 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${esc(c.teaching_format||'—')}</div></div>
 <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${esc(c.teaching_language)}</div></div>
 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level||'—'}</div></div>
@@ -978,7 +978,7 @@ const EXCEL_COLUMN_MAP = {
     '课程名称（中文）':'course_name_cn','课程名称(中文)':'course_name_cn','课程名称':'course_name_cn',
     '课程名称（英文）':'course_name_en','课程名称(英文)':'course_name_en','英文简称':'course_name_en',
     '授课方式':'teaching_mode',
-    '学位':'degree',
+    '学历/文凭':'degree',
     '授课形式':'teaching_format',
     '学制':'study_mode',
     '授课语言':'teaching_language',
@@ -1014,7 +1014,7 @@ function downloadTemplate() {
         {
             '学校简称':'HKU','学科分类':'商科','课程名称（中文）':'金融学硕士','课程名称（英文）':'MFin',
             '授课方式':'授课式',
-            '学位':'硕士','授课形式':'面授','学制':'全日制/兼读制','授课语言':'英语',
+            '学历/文凭':'硕士','授课形式':'面授','学制':'全日制/兼读制','授课语言':'英语',
             '全日制修读时间':1,'兼读制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
             '全日制学费（本地生）':150000,'全日制学费（非本地生）':300000,
             '兼读制学费（本地生）':120000,'兼读制学费（非本地生）':250000,
@@ -1030,7 +1030,7 @@ function downloadTemplate() {
         {
             '学校简称':'CUHK','学科分类':'工科','课程名称（中文）':'计算机科学硕士','课程名称（英文）':'MSc CS',
             '授课方式':'授课式',
-            '学位':'硕士','授课形式':'面授','学制':'仅全日制','授课语言':'英语',
+            '学历/文凭':'硕士','授课形式':'面授','学制':'仅全日制','授课语言':'英语',
             '全日制修读时间':1,'兼读制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
             '全日制学费（本地生）':120000,'全日制学费（非本地生）':250000,
             '兼读制学费（本地生）':'','兼读制学费（非本地生）':'',
@@ -1154,7 +1154,7 @@ function showImportPreview(rows, errors) {
 
     const displayFields = [
         ['school_abbreviation','学校'],['subject_category','学科'],['course_name_cn','课程名称'],
-        ['teaching_mode','授课方式'],['degree','学位'],['teaching_format','授课形式'],['study_mode','学制'],['teaching_language','语言'],
+        ['teaching_mode','授课方式'],['degree','学历/文凭'],['teaching_format','授课形式'],['study_mode','学制'],['teaching_language','语言'],
         ['academic_year','学年'],['student_identity','身份'],
             ['tuition_ft_local','全日制学费(本地)'],['tuition_ft_nonlocal','全日制学费(非本地)'],
             ['tuition_pt_local','兼读制学费(本地)'],['tuition_pt_nonlocal','兼读制学费(非本地)'],
