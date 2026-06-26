@@ -1424,7 +1424,7 @@ async function viewCourseDetail(id) {
                 <div class="detail-item detail-full">
                     <div class="detail-label">中文要求</div>
                     <div class="detail-value" style="line-height:1.8">
-                        <div>${c.chinese_req ? '✅ 需要' : '❌ 不需要'}${c.chinese_exempt ? '（可免试）' : ''}</div>
+                        <div>${c.chinese_req ? '✅ 需要' : '❌ 不需要'}${c.chinese_exempt ? '（学士学位的大学或大专院校以中文为教学语言的可免试）' : ''}</div>
                         ${(c.chinese_req && (c.chinese_dse || c.chinese_gaokao || c.chinese_hsk || c.chinese_other)) ? '<div style="margin-top:4px">' +
                             (c.chinese_dse ? '<span class="tag">DSE ' + cs(c.chinese_dse) + '级</span>' : '') +
                             (c.chinese_gaokao ? '<span class="tag">高考 ' + cs(c.chinese_gaokao) + '分</span>' : '') +
@@ -1436,7 +1436,7 @@ async function viewCourseDetail(id) {
                 <div class="detail-item detail-full">
                     <div class="detail-label">英文要求</div>
                     <div class="detail-value" style="line-height:1.8">
-                        <div>${c.english_req ? '✅ 需要' : '❌ 不需要'}${c.english_exempt ? '（可免试）' : ''}</div>
+                        <div>${c.english_req ? '✅ 需要' : '❌ 不需要'}${c.english_exempt ? '（学士学位的大学或大专院校以英语为教学语言的可免试）' : ''}</div>
                         ${(c.english_req && (c.english_dse || c.english_gaokao || c.english_toefl_pbt || c.english_toefl_ibt || c.english_ielts || c.english_cet4 || c.english_cet6 || c.english_other)) ? '<div style="margin-top:4px">' +
                             (c.english_dse ? '<span class="tag">DSE ' + cs(c.english_dse) + '级</span>' : '') +
                             (c.english_gaokao ? '<span class="tag">高考 ' + cs(c.english_gaokao) + '分</span>' : '') +
