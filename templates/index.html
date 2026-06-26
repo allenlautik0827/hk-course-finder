@@ -170,6 +170,7 @@
         [data-degree="学士"] { background: #e3f2fd; color: #1565c0; font-weight: 600; }
         [data-degree="硕士"] { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
         [data-degree="博士"] { background: #fce4ec; color: #ad1457; font-weight: 600; }
+        [data-degree="深造文凭"] { background: #fff3e0; color: #e65100; font-weight: 600; }
         .tag { display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0; border-radius: 4px; font-size: 12px; background: #f0f0f5; color: #555; white-space: nowrap; }
         /* Filter Bar */
         .filter-bar {
@@ -449,6 +450,7 @@
                     <label>学位</label>
                     <select id="filter-degree" onchange="filterCourses()">
                         <option value="">全部学位</option>
+                        <option value="深造文凭">深造文凭</option>
                         <option value="高级文凭">高级文凭</option>
                         <option value="副学士">副学士</option>
                         <option value="学士">学士</option>
@@ -688,7 +690,7 @@
                         <label>学位</label>
                         <select id="course-degree">
                             <option value="">请选择</option>
-                            <option>高级文凭</option><option>副学士</option><option>学士</option>
+                            <option>深造文凭</option><option>高级文凭</option><option>副学士</option><option>学士</option>
                             <option>硕士</option><option>博士</option>
                         </select>
                     </div>
@@ -1172,6 +1174,7 @@ function updateCourseStats() {
         <div class="stat-card"><div class="stat-icon blue">📚</div><div><div class="stat-value" id="stat-total">${allCourses.length}</div><div class="stat-label">收录课程总数</div></div></div>
         <div class="stat-card"><div class="stat-icon orange">📘</div><div><div class="stat-value" id="stat-bachelor">${allCourses.filter(c => c.degree === '学士').length}</div><div class="stat-label">学士</div></div></div>
         <div class="stat-card"><div class="stat-icon purple">🎓</div><div><div class="stat-value" id="stat-master">${allCourses.filter(c => c.degree === '硕士').length}</div><div class="stat-label">硕士</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">🎓</div><div><div class="stat-value" id="stat-advanced-diploma">${allCourses.filter(c => c.degree === '深造文凭').length}</div><div class="stat-label">深造文凭</div></div></div>
         <div class="stat-card"><div class="stat-icon red">🔬</div><div><div class="stat-value" id="stat-doctor">${allCourses.filter(c => c.degree === '博士').length}</div><div class="stat-label">博士</div></div></div>
         <div class="stat-card"><div class="stat-icon teal">📋</div><div><div class="stat-value" id="stat-associate">${allCourses.filter(c => c.degree === '副学士').length}</div><div class="stat-label">副学士</div></div></div>
         <div class="stat-card"><div class="stat-icon gray">📄</div><div><div class="stat-value" id="stat-diploma">${allCourses.filter(c => c.degree === '高级文凭').length}</div><div class="stat-label">高级文凭</div></div></div>
