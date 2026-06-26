@@ -581,7 +581,7 @@ function renderCourses(){
         if(languageDisplay.includes('双语')) languageDisplay='双语';
         
         let academicYearDisplay='—';
-        if(c.academic_year&&c.academic_year.length>=7) academicYearDisplay=c.academic_year.substring(2);
+        if(c.academic_year&&c.academic_year.includes('/')) academicYearDisplay=c.academic_year.split('/').map(p=>p.substring(2)).join('/');
         else academicYearDisplay=c.academic_year||'—';
         
         let identityDisplay='—';
@@ -853,7 +853,7 @@ function viewDetail(id){
     let languageDisplay=c.teaching_language||'—';
     if(languageDisplay.includes('双语')) languageDisplay='双语';
     let academicYearDisplay='—';
-    if(c.academic_year&&c.academic_year.length>=7) academicYearDisplay=c.academic_year.substring(2);
+    if(c.academic_year&&c.academic_year.includes('/')) academicYearDisplay=c.academic_year.split('/').map(p=>p.substring(2)).join('/');
     else academicYearDisplay=c.academic_year||'—';
     let identityDisplay='—';
     if(c.student_identity==='本地生/非本地生') identityDisplay='L/NL';

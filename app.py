@@ -707,7 +707,7 @@ def format_course(c):
             else c['teaching_language']
         ),
         'academic_year_display': (
-            c['academic_year'][2:].replace('/', '/') if len(c['academic_year']) >= 7
+            '/'.join(p[2:] for p in c['academic_year'].split('/')) if '/' in c.get('academic_year', '')
             else c['academic_year']
         ),
         'identity_display': (
