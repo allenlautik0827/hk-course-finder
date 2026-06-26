@@ -830,60 +830,83 @@ function clearAllCourses(){
     }, '🗑 清空全部课程');
 }
 
-// ==================== COURSE DETAIL ====================
 function viewDetail(id){
     const c=DB.courses.find(x=>x.id===id);if(!c)return;
+    const fmt=v=>v==null?'—':String(v);
     const cs=v=>{if(v==null||v==='')return'';return String(v).replace(/(分|级)$/,'')};
     const s=getSchool(c.school_id);
-    const tfl=c.tuition_ft_local?Number(c.tuition_ft_local).toLocaleString()+' (L)':'— (L)';
-    const tfn=c.tuition_ft_nonlocal?Number(c.tuition_ft_nonlocal).toLocaleString()+' (NL)':'— (NL)';
-    const tpl=c.tuition_pt_local?Number(c.tuition_pt_local).toLocaleString()+' (L)':'— (L)';
-    const tpn=c.tuition_pt_nonlocal?Number(c.tuition_pt_nonlocal).toLocaleString()+' (NL)':'— (NL)';
-    const dal=c.deadline_autumn_local?fmtDateCompact(c.deadline_autumn_local):'—';
-    const dan=c.deadline_autumn_nonlocal?fmtDateCompact(c.deadline_autumn_nonlocal):'—';
-    const dsl=c.deadline_spring_local?fmtDateCompact(c.deadline_spring_local):'—';
-    const dsn=c.deadline_spring_nonlocal?fmtDateCompact(c.deadline_spring_nonlocal):'—';
     const fmtYr2=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
-    // Compact display helpers
-    let studyModeDisplay='—';
-    if(c.study_mode==='全日制/兼读制'||c.study_mode==='全日制/非全日制') studyModeDisplay='FT/PT';
-    else if(c.study_mode==='全日制'||c.study_mode==='仅全日制') studyModeDisplay='FT';
-    else if(c.study_mode==='兼读制'||c.study_mode==='仅兼读制'||c.study_mode==='非全日制'||c.study_mode==='仅非全日制') studyModeDisplay='PT';
-    else studyModeDisplay=c.study_mode||'—';
-    let languageDisplay=c.teaching_language||'—';
-    if(languageDisplay.includes('双语')) languageDisplay='双语';
-    let academicYearDisplay='—';
-    if(c.academic_year&&c.academic_year.includes('/')) academicYearDisplay=c.academic_year.split('/').map(p=>p.substring(2)).join('/');
-    else academicYearDisplay=c.academic_year||'—';
-    let identityDisplay='—';
-    if(c.student_identity==='本地生/非本地生') identityDisplay='L/NL';
-    else if(c.student_identity==='仅本地生'||c.student_identity==='本地生') identityDisplay='L';
-    else if(c.student_identity==='仅非本地生'||c.student_identity==='非本地生') identityDisplay='NL';
-    else identityDisplay=c.student_identity||'—';
+
+    // Tuition raw values
+    const tfl=c.tuition_ft_local?Number(c.tuition_ft_local):null;
+    const tfn=c.tuition_ft_nonlocal?Number(c.tuition_ft_nonlocal):null;
+    const tpl=c.tuition_pt_local?Number(c.tuition_pt_local):null;
+    const tpn=c.tuition_pt_nonlocal?Number(c.tuition_pt_nonlocal):null;
+
+    // Deadline raw values
+    const dal=c.deadline_autumn_local||'';
+    const dan=c.deadline_autumn_nonlocal||'';
+    const dsl=c.deadline_spring_local||'';
+    const dsn=c.deadline_spring_nonlocal||'';
+
+    // Study duration
     let dur='—';
-    if(c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'/'+fmtYr2(c.study_duration_pt);
+    if(c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'（全日制）/ '+fmtYr2(c.study_duration_pt)+'（兼读制）';
     else if(c.study_mode==='全日制'||c.study_mode==='仅全日制')dur=c.study_duration_ft!=null?fmtYr2(c.study_duration_ft):'—';
     else dur=c.study_duration_pt!=null?fmtYr2(c.study_duration_pt):'—';
 
-    document.getElementById('dm-body').innerHTML=`
+    document.getElementById('dm-body').innerHTML=
 <div class="detail-section"><h4>📌 课程概要</h4></div>
 <div class="detail-grid">
+<div class="detail-item"><div class="detail-label">课程编号</div><div class="detail-value"><span class="badge badge-primary">${esc(c.course_code)}</span></div></div>
+<div class="detail-item detail-full"><div class="detail-label">课程名称</div><div class="detail-value" style="font-size:15px;font-weight:600">${esc(c.course_name_cn)}${c.course_name_en?'<span style="font-weight:400;color:var(--text-secondary);font-size:13px">（'+esc(c.course_name_en)+'）</span>':''}</div></div>
 <div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${s?s.name_cn+'（'+s.name_en+'）':'—'}</div></div>
 <div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge" data-subject="${esc(c.subject_category)}">${esc(c.subject_category)}</span></div></div>
-<div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></div></div>
-<div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${studyModeDisplay}</div></div>
-<div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${dur}</div></div>
-<div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${academicYearDisplay}</div></div>
-<div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${identityDisplay}</div></div>
 <div class="detail-item"><div class="detail-label">学位/文凭</div><div class="detail-value"><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></div></div>
+<div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></div></div>
+<div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode||'—'}</div></div>
+<div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value" style="font-size:13px">${dur}</div></div>
+<div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year||'—'}</div></div>
+<div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language||'—'}</div></div>
 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${esc(c.teaching_format||'—')}</div></div>
-<div class="detail-item"><div class="detail-label">语言</div><div class="detail-value">${languageDisplay}</div></div>
-<div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level||'—'}</div></div>
+<div class="detail-item"><div class="detail-label">学生身份</div><div class="detail-value">${c.student_identity||'—'}</div></div>
+<div class="detail-item"><div class="detail-label">资历架构级别</div><div class="detail-value">${c.qf_level||'—'}</div></div>
 <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number||'—'}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">FT学费</div><div class="detail-value">${tfl} / ${tfn}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">PT学费</div><div class="detail-value">${tpl} / ${tpn}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">截止日-秋</div><div class="detail-value">${dal} / ${dan}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">截止日-春</div><div class="detail-value">${dsl} / ${dsn}</div></div>
+</div>
+<div class="detail-section"><h4>💰 学费与报名</h4></div>
+<div class="detail-grid">
+<div class="detail-item">
+    <div class="detail-label">全日制学费（本地生）</div>
+    <div class="detail-value">${tfl!==null?'港币 '+tfl.toLocaleString()+' 元':'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">全日制学费（非本地生）</div>
+    <div class="detail-value">${tfn!==null?'港币 '+tfn.toLocaleString()+' 元':'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">兼读制学费（本地生）</div>
+    <div class="detail-value">${tpl!==null?'港币 '+tpl.toLocaleString()+' 元':'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">兼读制学费（非本地生）</div>
+    <div class="detail-value">${tpn!==null?'港币 '+tpn.toLocaleString()+' 元':'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">截止报名（秋季·本地生）</div>
+    <div class="detail-value">${dal?fmtDate(dal):'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">截止报名（秋季·非本地生）</div>
+    <div class="detail-value">${dan?fmtDate(dan):'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">截止报名（春季·本地生）</div>
+    <div class="detail-value">${dsl?fmtDate(dsl):'—'}</div>
+</div>
+<div class="detail-item">
+    <div class="detail-label">截止报名（春季·非本地生）</div>
+    <div class="detail-value">${dsn?fmtDate(dsn):'—'}</div>
+</div>
 </div>
 <div class="detail-section"><h4>📝 报读要求</h4></div>
 <div class="detail-grid">

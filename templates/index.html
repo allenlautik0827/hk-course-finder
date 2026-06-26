@@ -1409,36 +1409,69 @@ async function viewCourseDetail(id) {
     try {
         const c = await apiFetch(`${API}/courses/${id}`);
         const body = document.getElementById('detail-body');
-
-        // 清理分数/等级数值（去掉尾部"分""级"，避免"550分分"）
         const cs = v => { if (v == null || v === '') return ''; return String(v).replace(/(分|级)$/, ''); };
 
         body.innerHTML = `
             <!-- 1. 课程概要 -->
             <div class="detail-section"><h4>📌 课程概要</h4></div>
             <div class="detail-grid">
+                <div class="detail-item"><div class="detail-label">课程编号</div><div class="detail-value"><span class="badge badge-primary">${c.course_code || '—'}</span></div></div>
+                <div class="detail-item detail-full"><div class="detail-label">课程名称</div><div class="detail-value" style="font-size:15px;font-weight:600">${c.course_name_cn}${c.course_name_en ? '<span style="font-weight:400;color:var(--text-secondary);font-size:13px">（' + c.course_name_en + '）</span>' : ''}</div></div>
                 <div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${c.school_name_cn}（${c.school_name_en}）</div></div>
                 <div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></div></div>
-                <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></div></div>
-                <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode_display || c.study_mode}</div></div>
-                <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${c.study_duration_display || '—'}</div></div>
-                <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year_display || c.academic_year}</div></div>
                 <div class="detail-item"><div class="detail-label">学位/文凭</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
-                <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.identity_display || c.student_identity}</div></div>
-                <div class="detail-item"><div class="detail-label">语言</div><div class="detail-value">${c.language_display || c.teaching_language}</div></div>
+                <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></div></div>
+                <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode}</div></div>
+                <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${c.study_duration_display || '—'}</div></div>
+                <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year}</div></div>
+                <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language}</div></div>
                 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${c.teaching_format || '—'}</div></div>
-                <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level || '-'}</div></div>
-                <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number || '-'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">FT学费</div><div class="detail-value">${c.tuition_ft_display || '—'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">PT学费</div><div class="detail-value">${c.tuition_pt_display || '—'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">截止日-秋</div><div class="detail-value">${c.deadline_autumn_display || '—'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">截止日-春</div><div class="detail-value">${c.deadline_spring_display || '—'}</div></div>
+                <div class="detail-item"><div class="detail-label">学生身份</div><div class="detail-value">${c.student_identity}</div></div>
+                <div class="detail-item"><div class="detail-label">资历架构级别</div><div class="detail-value">${c.qf_level || '—'}</div></div>
+                <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number || '—'}</div></div>
             </div>
 
-            <!-- 2. 报读要求 -->
+            <!-- 2. 学费与报名 -->
+            <div class="detail-section"><h4>💰 学费与报名</h4></div>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">全日制学费（本地生）</div>
+                    <div class="detail-value">${c.tuition_ft_local ? '港币 ' + Number(c.tuition_ft_local).toLocaleString() + ' 元' : '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">全日制学费（非本地生）</div>
+                    <div class="detail-value">${c.tuition_ft_nonlocal ? '港币 ' + Number(c.tuition_ft_nonlocal).toLocaleString() + ' 元' : '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">兼读制学费（本地生）</div>
+                    <div class="detail-value">${c.tuition_pt_local ? '港币 ' + Number(c.tuition_pt_local).toLocaleString() + ' 元' : '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">兼读制学费（非本地生）</div>
+                    <div class="detail-value">${c.tuition_pt_nonlocal ? '港币 ' + Number(c.tuition_pt_nonlocal).toLocaleString() + ' 元' : '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">截止报名（秋季·本地生）</div>
+                    <div class="detail-value">${c.deadline_autumn_local || '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">截止报名（秋季·非本地生）</div>
+                    <div class="detail-value">${c.deadline_autumn_nonlocal || '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">截止报名（春季·本地生）</div>
+                    <div class="detail-value">${c.deadline_spring_local || '—'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">截止报名（春季·非本地生）</div>
+                    <div class="detail-value">${c.deadline_spring_nonlocal || '—'}</div>
+                </div>
+            </div>
+
+            <!-- 3. 报读要求 -->
             <div class="detail-section"><h4>📝 报读要求</h4></div>
             <div class="detail-grid">
-                <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement || '-'}</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement || '—'}</div></div>
                 <div class="detail-item detail-full">
                     <div class="detail-label">中文要求</div>
                     <div class="detail-value" style="line-height:1.8">
@@ -1467,17 +1500,17 @@ async function viewCourseDetail(id) {
                         '</div>' : ''}
                     </div>
                 </div>
-                <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements || '-'}</div></div>
+                <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements || '—'}</div></div>
                 <div class="detail-item"><div class="detail-label">面试要求</div><div class="detail-value">${c.interview_required ? '✅ 需要' : '❌ 不需要'}</div></div>
             </div>
 
-            <!-- 3. 课程细节 -->
+            <!-- 4. 课程细节 -->
             <div class="detail-section"><h4>📖 课程细节</h4></div>
             <div class="detail-grid">
                 <div class="detail-item detail-full"><div class="detail-label">课程介绍</div><div class="detail-value">${c.course_description || '（暂无介绍）'}</div></div>
-                <div class="detail-item"><div class="detail-label">课程主页</div><div class="detail-value">${c.course_page_url ? `<a href="${c.course_page_url}" target="_blank" class="clickable">🔗 链接</a>` : '-'}</div></div>
-                <div class="detail-item"><div class="detail-label">课程简章</div><div class="detail-value">${c.course_brochure_url ? `<a href="${c.course_brochure_url}" target="_blank" class="clickable">🔗 链接</a>` : '-'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">学校官网</div><div class="detail-value">${c.school_website ? `<a href="${c.school_website}" target="_blank" class="clickable">🔗 ${c.school_website}</a>` : '-'}</div></div>
+                <div class="detail-item"><div class="detail-label">课程主页</div><div class="detail-value">${c.course_page_url ? `<a href="${c.course_page_url}" target="_blank" class="clickable">🔗 链接</a>` : '—'}</div></div>
+                <div class="detail-item"><div class="detail-label">课程简章</div><div class="detail-value">${c.course_brochure_url ? `<a href="${c.course_brochure_url}" target="_blank" class="clickable">🔗 链接</a>` : '—'}</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">学校官网</div><div class="detail-value">${c.school_website ? `<a href="${c.school_website}" target="_blank" class="clickable">🔗 ${c.school_website}</a>` : '—'}</div></div>
             </div>
             ${isAdmin() ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
                 <button class="btn btn-outline" onclick="closeDetailModal();editCourse(${c.id})">✏️ 编辑</button>
