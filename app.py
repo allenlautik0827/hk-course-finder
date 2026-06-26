@@ -608,12 +608,15 @@ def format_course(c):
     tfn = c.get('tuition_ft_nonlocal') or 0
     ft_local_str = f"{int(tfl):,}" if tfl else ''
     ft_nonlocal_str = f"{int(tfn):,}" if tfn else ''
-    if ft_local_str and ft_nonlocal_str and ft_local_str != ft_nonlocal_str:
-        tuition_ft_display = f"{ft_local_str}(L)/{ft_nonlocal_str}(NL)"
+    if ft_local_str and ft_nonlocal_str:
+        if ft_local_str != ft_nonlocal_str:
+            tuition_ft_display = f"{ft_local_str}(L)<br>{ft_nonlocal_str}(NL)"
+        else:
+            tuition_ft_display = ft_local_str
     elif ft_local_str:
-        tuition_ft_display = f"{ft_local_str}(L)"
+        tuition_ft_display = ft_local_str
     elif ft_nonlocal_str:
-        tuition_ft_display = f"{ft_nonlocal_str}(NL)"
+        tuition_ft_display = ft_nonlocal_str
     else:
         tuition_ft_display = '—'
 
@@ -622,12 +625,15 @@ def format_course(c):
     tpn = c.get('tuition_pt_nonlocal') or 0
     pt_local_str = f"{int(tpl):,}" if tpl else ''
     pt_nonlocal_str = f"{int(tpn):,}" if tpn else ''
-    if pt_local_str and pt_nonlocal_str and pt_local_str != pt_nonlocal_str:
-        tuition_pt_display = f"{pt_local_str}(L)/{pt_nonlocal_str}(NL)"
+    if pt_local_str and pt_nonlocal_str:
+        if pt_local_str != pt_nonlocal_str:
+            tuition_pt_display = f"{pt_local_str}(L)<br>{pt_nonlocal_str}(NL)"
+        else:
+            tuition_pt_display = pt_local_str
     elif pt_local_str:
-        tuition_pt_display = f"{pt_local_str}(L)"
+        tuition_pt_display = pt_local_str
     elif pt_nonlocal_str:
-        tuition_pt_display = f"{pt_nonlocal_str}(NL)"
+        tuition_pt_display = pt_nonlocal_str
     else:
         tuition_pt_display = '—'
 
@@ -649,13 +655,13 @@ def format_course(c):
     if dal and dan and dal != dan:
         dl_fmt = dal[2:].replace('-', '/') if len(dal) >= 10 else dal
         dn_fmt = dan[2:].replace('-', '/') if len(dan) >= 10 else dan
-        deadline_autumn_display = f"{dl_fmt}(L)/{dn_fmt}(NL)"
+        deadline_autumn_display = f"{dl_fmt}(L)<br>{dn_fmt}(NL)"
     elif dal:
         dl_fmt = dal[2:].replace('-', '/') if len(dal) >= 10 else dal
-        deadline_autumn_display = f"{dl_fmt}(L)"
+        deadline_autumn_display = dl_fmt
     elif dan:
         dn_fmt = dan[2:].replace('-', '/') if len(dan) >= 10 else dan
-        deadline_autumn_display = f"{dn_fmt}(NL)"
+        deadline_autumn_display = dn_fmt
     else:
         deadline_autumn_display = '—'
 
@@ -665,13 +671,13 @@ def format_course(c):
     if dsl and dsn and dsl != dsn:
         dl_fmt = dsl[2:].replace('-', '/') if len(dsl) >= 10 else dsl
         dn_fmt = dsn[2:].replace('-', '/') if len(dsn) >= 10 else dsn
-        deadline_spring_display = f"{dl_fmt}(L)/{dn_fmt}(NL)"
+        deadline_spring_display = f"{dl_fmt}(L)<br>{dn_fmt}(NL)"
     elif dsl:
         dl_fmt = dsl[2:].replace('-', '/') if len(dsl) >= 10 else dsl
-        deadline_spring_display = f"{dl_fmt}(L)"
+        deadline_spring_display = dl_fmt
     elif dsn:
         dn_fmt = dsn[2:].replace('-', '/') if len(dsn) >= 10 else dsn
-        deadline_spring_display = f"{dn_fmt}(NL)"
+        deadline_spring_display = dn_fmt
     else:
         deadline_spring_display = '—'
 

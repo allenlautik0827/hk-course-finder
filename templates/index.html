@@ -1150,7 +1150,7 @@ function renderCourses() {
             <td><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
             <td>${c.study_mode_display || c.study_mode || '—'}</td>
-            <td>${c.language_display || c.teaching_language || '—'}</td>
+            <td style="white-space:nowrap">${c.language_display || c.teaching_language || '—'}</td>
             <td style="font-size:13px">${c.study_duration_display||'—'}</td>
             <td>${c.academic_year_display || c.academic_year || '—'}</td>
             <td>${c.identity_display || c.student_identity || '—'}</td>

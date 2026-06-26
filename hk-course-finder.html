@@ -593,42 +593,50 @@ function renderCourses(){
         let tuitionFtHtml='—';
         const tfl=c.tuition_ft_local?Number(c.tuition_ft_local):null;
         const tfn=c.tuition_ft_nonlocal?Number(c.tuition_ft_nonlocal):null;
-        if(tfl!==null&&tfn!==null&&tfl!==tfn){
-            tuitionFtHtml=tfl.toLocaleString()+'(L)/'+tfn.toLocaleString()+'(NL)';
+        if(tfl!==null&&tfn!==null){
+            if(tfl!==tfn){
+                tuitionFtHtml=tfl.toLocaleString()+'(L)<br>'+tfn.toLocaleString()+'(NL)';
+            } else {
+                tuitionFtHtml=tfl.toLocaleString();
+            }
         } else if(tfl!==null){
-            tuitionFtHtml=tfl.toLocaleString()+'(L)';
+            tuitionFtHtml=tfl.toLocaleString();
         } else if(tfn!==null){
-            tuitionFtHtml=tfn.toLocaleString()+'(NL)';
+            tuitionFtHtml=tfn.toLocaleString();
         }
         let tuitionPtHtml='—';
         const tpl=c.tuition_pt_local?Number(c.tuition_pt_local):null;
         const tpn=c.tuition_pt_nonlocal?Number(c.tuition_pt_nonlocal):null;
-        if(tpl!==null&&tpn!==null&&tpl!==tpn){
-            tuitionPtHtml=tpl.toLocaleString()+'(L)/'+tpn.toLocaleString()+'(NL)';
+        if(tpl!==null&&tpn!==null){
+            if(tpl!==tpn){
+                tuitionPtHtml=tpl.toLocaleString()+'(L)<br>'+tpn.toLocaleString()+'(NL)';
+            } else {
+                tuitionPtHtml=tpl.toLocaleString();
+            }
         } else if(tpl!==null){
-            tuitionPtHtml=tpl.toLocaleString()+'(L)';
+            tuitionPtHtml=tpl.toLocaleString();
         } else if(tpn!==null){
-            tuitionPtHtml=tpn.toLocaleString()+'(NL)';
+            tuitionPtHtml=tpn.toLocaleString();
         }
         let deadlineAutumnHtml='—';
         const dal=c.deadline_autumn_local;
         const dan=c.deadline_autumn_nonlocal;
         if(dal&&dan&&dal!==dan){
-            deadlineAutumnHtml=fmtDateCompact(dal)+'(L)/'+fmtDateCompact(dan)+'(NL)';
+            deadlineAutumnHtml=fmtDateCompact(dal)+'(L)<br>'+fmtDateCompact(dan)+'(NL)';
         } else if(dal){
-            deadlineAutumnHtml=fmtDateCompact(dal)+'(L)';
+            deadlineAutumnHtml=fmtDateCompact(dal);
         } else if(dan){
-            deadlineAutumnHtml=fmtDateCompact(dan)+'(NL)';
+            deadlineAutumnHtml=fmtDateCompact(dan);
         }
         let deadlineSpringHtml='—';
         const dsl=c.deadline_spring_local;
         const dsn=c.deadline_spring_nonlocal;
         if(dsl&&dsn&&dsl!==dsn){
-            deadlineSpringHtml=fmtDateCompact(dsl)+'(L)/'+fmtDateCompact(dsn)+'(NL)';
+            deadlineSpringHtml=fmtDateCompact(dsl)+'(L)<br>'+fmtDateCompact(dsn)+'(NL)';
         } else if(dsl){
-            deadlineSpringHtml=fmtDateCompact(dsl)+'(L)';
+            deadlineSpringHtml=fmtDateCompact(dsl);
         } else if(dsn){
-            deadlineSpringHtml=fmtDateCompact(dsn)+'(NL)';
+            deadlineSpringHtml=fmtDateCompact(dsn);
         }
         return `<tr>
 <td style="text-align:center;color:var(--text-secondary);font-size:12px">${i+1}</td>
@@ -638,7 +646,7 @@ function renderCourses(){
 <td><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></td>
 <td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
 <td>${studyModeDisplay}</td>
-<td>${esc(languageDisplay)}</td>
+<td style="white-space:nowrap">${esc(languageDisplay)}</td>
 <td style="font-size:13px">${dur}</td>
 <td>${academicYearDisplay}</td>
 <td>${identityDisplay}</td>
