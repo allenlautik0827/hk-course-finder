@@ -165,6 +165,7 @@
         /* 授课方式颜色映射 */
         [data-mode="授课式"] { background: #fdf6e8; color: #b8860b; }
         [data-mode="研究式"] { background: #ede7f6; color: #4527a0; }
+        .badge-degree { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
         /* Filter Bar */
         .filter-bar {
             display: flex; flex-wrap: wrap; gap: 12px;
@@ -507,6 +508,7 @@
                                 <th>学校</th>
                                 <th>学科</th>
                                 <th>授课方式</th>
+                                <th>学位</th>
                                 <th>课程名称</th>
                                 <th>学制</th>
                                 <th>授课语言</th>
@@ -1110,7 +1112,7 @@ async function filterCourses() {
 function renderCourses() {
     const tbody = document.getElementById('courses-tbody');
     if (allCourses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
         updateAdminUI();
         return;
     }
@@ -1122,6 +1124,7 @@ function renderCourses() {
             <td><strong>${c.school_abbr}</strong></td>
             <td><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></td>
             <td><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></td>
+            <td><span class="badge badge-degree">${c.degree || '—'}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
             <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
             <td>${c.teaching_language}</td>
@@ -1396,6 +1399,7 @@ async function viewCourseDetail(id) {
                     })()}
                 </div></div>
                 <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year}</div></div>
+                <div class="detail-item"><div class="detail-label">学位</div><div class="detail-value">${c.degree || '—'}</div></div>
                 <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.student_identity}</div></div>
                 <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language}</div></div>
                 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level || '-'}</div></div>
@@ -1535,6 +1539,7 @@ const EXCEL_COLUMN_MAP = {
     '课程名称(英文)': 'course_name_en',
     '英文简称': 'course_name_en',
     '授课方式': 'teaching_mode',
+    '学位': 'degree',
     '学制': 'study_mode',
     '授课语言': 'teaching_language',
     '全日制修读时间': 'study_duration_ft',
@@ -1597,6 +1602,7 @@ function downloadTemplate() {
             '课程名称（中文）': '金融学硕士',
             '课程名称（英文）': 'MFin',
             '授课方式': '授课式',
+            '学位': '硕士',
             '学制': '全日制/非全日制',
             '授课语言': '英语',
             '全日制修读时间': 1,
@@ -1638,6 +1644,7 @@ function downloadTemplate() {
             '课程名称（中文）': '计算机科学硕士',
             '课程名称（英文）': 'MSc CS',
             '授课方式': '授课式',
+            '学位': '硕士',
             '学制': '仅全日制',
             '授课语言': '英语',
             '全日制修读时间': 1,
@@ -1808,7 +1815,7 @@ function showImportPreview(rows, errors) {
     // 预览表格
     const displayFields = [
         ['school_abbreviation', '学校'], ['subject_category', '学科'], ['course_name_cn', '课程名称'],
-        ['teaching_mode', '授课方式'], ['study_mode', '学制'], ['teaching_language', '语言'],
+        ['teaching_mode', '授课方式'], ['degree', '学位'], ['study_mode', '学制'], ['teaching_language', '语言'],
         ['academic_year', '学年'], ['student_identity', '身份'], ['tuition_local', '学费(本地)'],
         ['tuition_non_local', '学费(非本地)'],
     ];

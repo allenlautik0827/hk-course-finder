@@ -65,6 +65,7 @@ table tbody tr:hover{background:#f8fafd}
 /* 授课方式颜色映射 */
 [data-mode="授课式"]{background:#fdf6e8;color:#b8860b}
 [data-mode="研究式"]{background:#ede7f6;color:#4527a0}
+.badge-degree{background:#e8f5e9;color:#2e7d32;font-weight:600}
 .text-muted{color:var(--text-secondary);font-size:12px}
 .filter-bar{display:flex;flex-wrap:wrap;gap:12px;padding:16px 20px;align-items:flex-end}
 .filter-group{display:flex;flex-direction:column;gap:4px}
@@ -196,7 +197,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="panel">
 <div class="panel-header"><h3>📚 课程列表 <span id="course-count" class="text-muted"></span></h3></div>
 <div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
-<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>学费（港币）</th><th>截止报名</th><th>操作</th>
+<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学位</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>学费（港币）</th><th>截止报名</th><th>操作</th>
 </tr></thead><tbody id="courses-tbody"></tbody></table></div></div>
 </div></div>
 
@@ -540,7 +541,7 @@ function renderCourses(){
     const list=getFilteredCourses();
     document.getElementById('course-count').textContent='（共 '+list.length+' 个课程）';
     const tbody=document.getElementById('courses-tbody');
-    if(!list.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
+    if(!list.length){tbody.innerHTML='<tr><td colspan="14"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
     tbody.innerHTML=list.map(c=>{
         const s=getSchool(c.school_id);
         const fmtYr=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
@@ -579,6 +580,7 @@ function renderCourses(){
 <td><strong>${s?s.abbreviation:'—'}</strong></td>
 <td><span class="badge" data-subject="${esc(c.subject_category)}">${esc(c.subject_category)}</span></td>
 <td><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></td>
+<td><span class="badge badge-degree">${esc(c.degree||'—')}</span></td>
 <td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
 <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
 <td>${esc(c.teaching_language)}</td>
@@ -916,6 +918,7 @@ const EXCEL_COLUMN_MAP = {
     '课程名称（中文）':'course_name_cn','课程名称(中文)':'course_name_cn','课程名称':'course_name_cn',
     '课程名称（英文）':'course_name_en','课程名称(英文)':'course_name_en','英文简称':'course_name_en',
     '授课方式':'teaching_mode',
+    '学位':'degree',
     '学制':'study_mode',
     '授课语言':'teaching_language',
     '全日制修读时间':'study_duration_ft','全日制修读时间（年）':'study_duration_ft',
@@ -945,7 +948,8 @@ function downloadTemplate() {
     const templateData = [
         {
             '学校简称':'HKU','学科分类':'商科','课程名称（中文）':'金融学硕士','课程名称（英文）':'MFin',
-            '授课方式':'授课式','学制':'全日制/非全日制','授课语言':'英语',
+            '授课方式':'授课式',
+            '学位':'硕士','学制':'全日制/非全日制','授课语言':'英语',
             '全日制修读时间':1,'非全日制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
             '学费（本地生）':150000,'学费（非本地生）':300000,
             '截止报名（本地生）':'2027-01-31','截止报名（非本地生）':'2026-12-31',
@@ -958,7 +962,8 @@ function downloadTemplate() {
         },
         {
             '学校简称':'CUHK','学科分类':'工科','课程名称（中文）':'计算机科学硕士','课程名称（英文）':'MSc CS',
-            '授课方式':'授课式','学制':'仅全日制','授课语言':'英语',
+            '授课方式':'授课式',
+            '学位':'硕士','学制':'仅全日制','授课语言':'英语',
             '全日制修读时间':1,'非全日制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
             '学费（本地生）':120000,'学费（非本地生）':250000,
             '截止报名（本地生）':'2027-02-28','截止报名（非本地生）':'2027-01-15',
@@ -1076,7 +1081,7 @@ function showImportPreview(rows, errors) {
 
     const displayFields = [
         ['school_abbreviation','学校'],['subject_category','学科'],['course_name_cn','课程名称'],
-        ['teaching_mode','授课方式'],['study_mode','学制'],['teaching_language','语言'],
+        ['teaching_mode','授课方式'],['degree','学位'],['study_mode','学制'],['teaching_language','语言'],
         ['academic_year','学年'],['student_identity','身份'],['tuition_local','学费(本地)'],
         ['tuition_non_local','学费(非本地)'],
     ];
