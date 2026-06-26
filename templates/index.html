@@ -464,8 +464,8 @@
                     <label>学制</label>
                     <select id="filter-study-mode">
                         <option value="">全部</option>
-                        <option>全日制/非全日制</option>
-                        <option>仅全日制</option><option>仅非全日制</option>
+                        <option>全日制/兼读制</option>
+                        <option>仅全日制</option><option>仅兼读制</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -658,8 +658,8 @@
                         <label><span class="required">*</span> 学制</label>
                         <select id="course-study-mode" required onchange="toggleDurationFields()">
                             <option value="">请选择</option>
-                            <option>全日制/非全日制</option>
-                            <option>仅全日制</option><option>仅非全日制</option>
+                            <option>全日制/兼读制</option>
+                            <option>仅全日制</option><option>仅兼读制</option>
                         </select>
                     </div>
                     <div class="form-group" id="ft-duration-group">
@@ -667,7 +667,7 @@
                         <input type="number" id="course-duration-ft" step="0.5" min="0.5" placeholder="如：1">
                     </div>
                     <div class="form-group" id="pt-duration-group">
-                        <label>非全日制修读时间（年）</label>
+                        <label>兼读制修读时间（年）</label>
                         <input type="number" id="course-duration-pt" step="0.5" min="0.5" placeholder="如：2">
                     </div>
                     <div class="form-group">
@@ -1131,11 +1131,11 @@ function renderCourses() {
             <td><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></td>
             <td><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
-            <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
+            <td style="font-size:12px;line-height:1.6;white-space:nowrap">${studyModeHtml}</td>
             <td>${c.teaching_language}</td>
             <td style="font-size:13px">${c.study_duration_display||'—'}</td>
             <td>${c.academic_year}</td>
-            <td style="font-size:12px;line-height:1.6">${identityHtml}</td>
+            <td style="font-size:12px;line-height:1.6;white-space:nowrap">${identityHtml}</td>
             <td style="font-size:12px;line-height:1.6">${c.tuition_display||'—'}</td>
             <td style="font-size:12px;line-height:1.6">${c.deadline_display||'—'}</td>
             <td>
@@ -1267,7 +1267,7 @@ function toggleDurationFields() {
     const mode = document.getElementById('course-study-mode').value;
     const ft = document.getElementById('ft-duration-group');
     const pt = document.getElementById('pt-duration-group');
-    if (mode === '仅非全日制') { ft.style.display = 'none'; pt.style.display = 'flex'; }
+    if (mode === '仅兼读制') { ft.style.display = 'none'; pt.style.display = 'flex'; }
     else if (mode === '仅全日制') { ft.style.display = 'flex'; pt.style.display = 'none'; }
     else { ft.style.display = 'flex'; pt.style.display = 'flex'; }
 }
@@ -1381,6 +1381,9 @@ async function viewCourseDetail(id) {
         const c = await apiFetch(`${API}/courses/${id}`);
         const body = document.getElementById('detail-body');
 
+        // 清理分数/等级数值（去掉尾部"分""级"，避免"550分分"）
+        const cs = v => { if (v == null || v === '') return ''; return String(v).replace(/(分|级)$/, ''); };
+
         // 格式化学费和截止日期
         const tuitionLocal = c.tuition_local ? formatCurrency(c.tuition_local) : 'HKD-';
         const tuitionNonLocal = c.tuition_non_local ? formatCurrency(c.tuition_non_local) : 'HKD-';
@@ -1398,8 +1401,8 @@ async function viewCourseDetail(id) {
                 <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">
                     ${c.study_duration_display || (() => {
                         const fmtYr = v => v == null ? '-' : (Number.isInteger(v) ? v : (v === Math.floor(v) ? Math.floor(v) : v)) + '年';
-                        if (c.study_mode === '全日制/非全日制' || c.study_mode === '全日制/兼读制') return fmtYr(c.study_duration_ft) + '/' + fmtYr(c.study_duration_pt);
-                        if (c.study_mode === '全日制') return fmtYr(c.study_duration_ft);
+                        if (c.study_mode === '全日制/兼读制') return fmtYr(c.study_duration_ft) + '/' + fmtYr(c.study_duration_pt);
+                        if (c.study_mode === '全日制' || c.study_mode === '仅全日制') return fmtYr(c.study_duration_ft);
                         return fmtYr(c.study_duration_pt);
                     })()}
                 </div></div>
@@ -1418,24 +1421,34 @@ async function viewCourseDetail(id) {
             <div class="detail-section"><h4>📝 报读要求</h4></div>
             <div class="detail-grid">
                 <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement || '-'}</div></div>
-                <div class="detail-item"><div class="detail-label">中文要求</div><div class="detail-value">${c.chinese_req ? '✅ 需要' : '❌ 不需要'}${c.chinese_exempt ? '（可免试）' : ''}</div></div>
-                <div class="detail-item"><div class="detail-label">英文要求</div><div class="detail-value">${c.english_req ? '✅ 需要' : '❌ 不需要'}${c.english_exempt ? '（可免试）' : ''}</div></div>
-                ${(c.chinese_req && (c.chinese_dse || c.chinese_gaokao || c.chinese_hsk || c.chinese_other)) ? `<div class="detail-item detail-full"><div class="detail-label">中文考试要求</div><div class="detail-value">
-                    ${c.chinese_dse ? '<span class="tag">DSE ' + c.chinese_dse + '级</span>' : ''}
-                    ${c.chinese_gaokao ? '<span class="tag">高考 ' + c.chinese_gaokao + '分</span>' : ''}
-                    ${c.chinese_hsk ? '<span class="tag">HSK ' + c.chinese_hsk + '级</span>' : ''}
-                    ${c.chinese_other ? '<span class="tag">' + c.chinese_other + '</span>' : ''}
-                </div></div>` : ''}
-                ${(c.english_req && (c.english_dse || c.english_gaokao || c.english_toefl_pbt || c.english_toefl_ibt || c.english_ielts || c.english_cet4 || c.english_cet6 || c.english_other)) ? `<div class="detail-item detail-full"><div class="detail-label">英文考试要求</div><div class="detail-value">
-                    ${c.english_dse ? '<span class="tag">DSE ' + c.english_dse + '级</span>' : ''}
-                    ${c.english_gaokao ? '<span class="tag">高考 ' + c.english_gaokao + '分</span>' : ''}
-                    ${c.english_toefl_pbt ? '<span class="tag">TOEFL笔考 ' + c.english_toefl_pbt + '分</span>' : ''}
-                    ${c.english_toefl_ibt ? '<span class="tag">TOEFL网考 ' + c.english_toefl_ibt + '分</span>' : ''}
-                    ${c.english_ielts ? '<span class="tag">IELTS ' + c.english_ielts + '分</span>' : ''}
-                    ${c.english_cet4 ? '<span class="tag">CET-4 ' + c.english_cet4 + '分</span>' : ''}
-                    ${c.english_cet6 ? '<span class="tag">CET-6 ' + c.english_cet6 + '分</span>' : ''}
-                    ${c.english_other ? '<span class="tag">' + c.english_other + '</span>' : ''}
-                </div></div>` : ''}
+                <div class="detail-item detail-full">
+                    <div class="detail-label">中文要求</div>
+                    <div class="detail-value" style="line-height:1.8">
+                        <div>${c.chinese_req ? '✅ 需要' : '❌ 不需要'}${c.chinese_exempt ? '（可免试）' : ''}</div>
+                        ${(c.chinese_req && (c.chinese_dse || c.chinese_gaokao || c.chinese_hsk || c.chinese_other)) ? '<div style="margin-top:4px">' +
+                            (c.chinese_dse ? '<span class="tag">DSE ' + cs(c.chinese_dse) + '级</span>' : '') +
+                            (c.chinese_gaokao ? '<span class="tag">高考 ' + cs(c.chinese_gaokao) + '分</span>' : '') +
+                            (c.chinese_hsk ? '<span class="tag">HSK ' + cs(c.chinese_hsk) + '级</span>' : '') +
+                            (c.chinese_other ? '<span class="tag">' + cs(c.chinese_other) + '</span>' : '') +
+                        '</div>' : ''}
+                    </div>
+                </div>
+                <div class="detail-item detail-full">
+                    <div class="detail-label">英文要求</div>
+                    <div class="detail-value" style="line-height:1.8">
+                        <div>${c.english_req ? '✅ 需要' : '❌ 不需要'}${c.english_exempt ? '（可免试）' : ''}</div>
+                        ${(c.english_req && (c.english_dse || c.english_gaokao || c.english_toefl_pbt || c.english_toefl_ibt || c.english_ielts || c.english_cet4 || c.english_cet6 || c.english_other)) ? '<div style="margin-top:4px">' +
+                            (c.english_dse ? '<span class="tag">DSE ' + cs(c.english_dse) + '级</span>' : '') +
+                            (c.english_gaokao ? '<span class="tag">高考 ' + cs(c.english_gaokao) + '分</span>' : '') +
+                            (c.english_toefl_pbt ? '<span class="tag">TOEFL笔考 ' + cs(c.english_toefl_pbt) + '分</span>' : '') +
+                            (c.english_toefl_ibt ? '<span class="tag">TOEFL网考 ' + cs(c.english_toefl_ibt) + '分</span>' : '') +
+                            (c.english_ielts ? '<span class="tag">IELTS ' + cs(c.english_ielts) + '分</span>' : '') +
+                            (c.english_cet4 ? '<span class="tag">CET-4 ' + cs(c.english_cet4) + '分</span>' : '') +
+                            (c.english_cet6 ? '<span class="tag">CET-6 ' + cs(c.english_cet6) + '分</span>' : '') +
+                            (c.english_other ? '<span class="tag">' + cs(c.english_other) + '</span>' : '') +
+                        '</div>' : ''}
+                    </div>
+                </div>
                 <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements || '-'}</div></div>
                 <div class="detail-item"><div class="detail-label">面试要求</div><div class="detail-value">${c.interview_required ? '✅ 需要' : '❌ 不需要'}</div></div>
             </div>
@@ -1539,8 +1552,8 @@ const EXCEL_COLUMN_MAP = {
     '授课语言': 'teaching_language',
     '全日制修读时间': 'study_duration_ft',
     '全日制修读时间（年）': 'study_duration_ft',
-    '非全日制修读时间': 'study_duration_pt',
-    '非全日制修读时间（年）': 'study_duration_pt',
+    '兼读制修读时间': 'study_duration_pt',
+    '兼读制修读时间（年）': 'study_duration_pt',
     '学年': 'academic_year',
     '身份': 'student_identity',
     '学费（本地生）': 'tuition_local',
@@ -1599,10 +1612,10 @@ function downloadTemplate() {
             '授课方式': '授课式',
             '学位': '硕士',
             '授课形式': '面授',
-            '学制': '全日制/非全日制',
+            '学制': '全日制/兼读制',
             '授课语言': '英语',
             '全日制修读时间': 1,
-            '非全日制修读时间': 2,
+            '兼读制修读时间': 2,
             '学年': '2026/2027',
             '身份': '本地生/非本地生',
             '学费（本地生）': 150000,
@@ -1645,7 +1658,7 @@ function downloadTemplate() {
             '学制': '仅全日制',
             '授课语言': '英语',
             '全日制修读时间': 1,
-            '非全日制修读时间': '',
+            '兼读制修读时间': '',
             '学年': '2026/2027',
             '身份': '本地生/非本地生',
             '学费（本地生）': 120000,

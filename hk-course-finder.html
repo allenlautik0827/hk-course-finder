@@ -188,7 +188,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="filter-group"><label>授课方式</label><select id="f-mode"><option value="">全部</option><option>授课式</option><option>研究式</option></select></div>
 <div class="filter-group"><label>学位</label><select id="filter-degree"><option value="">全部学位</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>硕士</option><option>博士</option></select></div>
 <div class="filter-group"><label>课程名称</label><input type="text" id="f-name" placeholder="关键词检索…"></div>
-<div class="filter-group"><label>学制</label><select id="f-study-mode"><option value="">全部</option><option>全日制/非全日制</option><option>仅全日制</option><option>仅非全日制</option></select></div>
+<div class="filter-group"><label>学制</label><select id="f-study-mode"><option value="">全部</option><option>全日制/兼读制</option><option>仅全日制</option><option>仅兼读制</option></select></div>
 <div class="filter-group"><label>学年</label><select id="f-year"><option value="">全部</option></select></div>
 <div class="filter-group"><label>身份</label><select id="f-identity"><option value="">全部</option><option>本地生/非本地生</option><option>仅本地生</option><option>仅非本地生</option></select></div>
 <div class="filter-group"><label>学费(HKD)最低</label><input type="number" id="f-tuition-min" placeholder="最低" step="1000"></div>
@@ -256,9 +256,9 @@ table tbody tr:hover{background:#f8fafd}
 <div class="form-group"><label><span class="required">*</span> 课程名称（中文全称）</label><input type="text" id="cm-name-cn"></div>
 <div class="form-group"><label>课程名称（英文简称）</label><input type="text" id="cm-name-en"></div>
 <div class="form-group"><label><span class="required">*</span> 授课语言</label><select id="cm-language"><option value="">请选择</option><option>英语</option><option>粤语</option><option>普通话</option><option>其他</option></select></div>
-<div class="form-group"><label><span class="required">*</span> 学制</label><select id="cm-study-mode" onchange="toggleCmDuration()"><option value="">请选择</option><option>全日制/非全日制</option><option>仅全日制</option><option>仅非全日制</option></select></div>
+<div class="form-group"><label><span class="required">*</span> 学制</label><select id="cm-study-mode" onchange="toggleCmDuration()"><option value="">请选择</option><option>全日制/兼读制</option><option>仅全日制</option><option>仅兼读制</option></select></div>
 <div class="form-group" id="cm-ft-g"><label>全日制修读时间（年）</label><input type="number" id="cm-dur-ft" step="0.5" min="0.5" placeholder="如：1"></div>
-<div class="form-group" id="cm-pt-g"><label>非全日制修读时间（年）</label><input type="number" id="cm-dur-pt" step="0.5" min="0.5" placeholder="如：2"></div>
+<div class="form-group" id="cm-pt-g"><label>兼读制修读时间（年）</label><input type="number" id="cm-dur-pt" step="0.5" min="0.5" placeholder="如：2"></div>
 <div class="form-group"><label><span class="required">*</span> 学年</label><select id="cm-year"></select></div>
 <div class="form-group"><label><span class="required">*</span> 身份</label><select id="cm-identity"><option value="">请选择</option><option>本地生/非本地生</option><option>仅本地生</option><option>仅非本地生</option></select></div>
 <div class="form-group"><label>学位</label><select id="cm-degree"><option value="">请选择</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>硕士</option><option>博士</option></select></div>
@@ -551,9 +551,9 @@ function renderCourses(){
         const s=getSchool(c.school_id);
         const fmtYr=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
         let dur='—';
-        if(c.study_mode==='全日制/非全日制'||c.study_mode==='全日制/兼读制'){
+        if(c.study_mode==='全日制/兼读制'){
             dur=fmtYr(c.study_duration_ft)+'/'+fmtYr(c.study_duration_pt);
-        } else if(c.study_mode==='全日制'){
+        } else if(c.study_mode==='全日制'||c.study_mode==='仅全日制'){
             dur=c.study_duration_ft!=null?fmtYr(c.study_duration_ft):'—';
         } else {
             dur=c.study_duration_pt!=null?fmtYr(c.study_duration_pt):'—';
@@ -587,11 +587,11 @@ function renderCourses(){
 <td><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></td>
 <td><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></td>
 <td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
-<td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
+<td style="font-size:12px;line-height:1.6;white-space:nowrap">${studyModeHtml}</td>
 <td>${esc(c.teaching_language)}</td>
 <td style="font-size:13px">${dur}</td>
 <td>${esc(c.academic_year)}</td>
-<td style="font-size:12px;line-height:1.6">${identityHtml}</td>
+<td style="font-size:12px;line-height:1.6;white-space:nowrap">${identityHtml}</td>
 <td style="font-size:12px;line-height:1.6">${tuitionHtml}</td>
 <td style="font-size:12px;line-height:1.6">${deadlineHtml}</td>
 <td><button class="btn btn-outline btn-xs admin-only" onclick="editCourse(${c.id})">✏️</button>
@@ -671,7 +671,7 @@ function openCourseModal(id){
 function setVal(id,val){const el=document.getElementById(id);if(el)el.value=val}
 function toggleCmDuration(){
     const mode=document.getElementById('cm-study-mode').value;
-    document.getElementById('cm-ft-g').style.display=(mode==='仅非全日制')?'none':'flex';
+    document.getElementById('cm-ft-g').style.display=(mode==='仅兼读制')?'none':'flex';
     document.getElementById('cm-pt-g').style.display=(mode==='仅全日制')?'none':'flex';
 }
 function saveCourse(){
@@ -764,6 +764,7 @@ function clearAllCourses(){
 // ==================== COURSE DETAIL ====================
 function viewDetail(id){
     const c=DB.courses.find(x=>x.id===id);if(!c)return;
+    const cs=v=>{if(v==null||v==='')return'';return String(v).replace(/(分|级)$/,'')};
     const s=getSchool(c.school_id);
     const tl=c.tuition_local?'HKD'+Number(c.tuition_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
     const tn=c.tuition_non_local?'HKD'+Number(c.tuition_non_local).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
@@ -771,8 +772,8 @@ function viewDetail(id){
     const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):'—';
     const fmtYr2=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
     let dur='—';
-    if(c.study_mode==='全日制/非全日制'||c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'/'+fmtYr2(c.study_duration_pt);
-    else if(c.study_mode==='全日制')dur=c.study_duration_ft!=null?fmtYr2(c.study_duration_ft):'—';
+    if(c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'/'+fmtYr2(c.study_duration_pt);
+    else if(c.study_mode==='全日制'||c.study_mode==='仅全日制')dur=c.study_duration_ft!=null?fmtYr2(c.study_duration_ft):'—';
     else dur=c.study_duration_pt!=null?fmtYr2(c.study_duration_pt):'—';
 
     document.getElementById('dm-body').innerHTML=`
@@ -796,24 +797,34 @@ function viewDetail(id){
 <div class="detail-section"><h4>📝 报读要求</h4></div>
 <div class="detail-grid">
 <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement||'—'}</div></div>
-<div class="detail-item"><div class="detail-label">中文要求</div><div class="detail-value">${c.chinese_req?'✅ 需要':'❌ 不需要'}${c.chinese_exempt?'（可免试）':''}</div></div>
-<div class="detail-item"><div class="detail-label">英文要求</div><div class="detail-value">${c.english_req?'✅ 需要':'❌ 不需要'}${c.english_exempt?'（可免试）':''}</div></div>
-${(c.chinese_req&&(c.chinese_dse||c.chinese_gaokao||c.chinese_hsk||c.chinese_other))?'<div class="detail-item detail-full"><div class="detail-label">中文考试要求</div><div class="detail-value">'+
-    (c.chinese_dse?'<span class="tag">DSE '+esc(c.chinese_dse)+'级</span>':'')+
-    (c.chinese_gaokao?'<span class="tag">高考 '+esc(c.chinese_gaokao)+'分</span>':'')+
-    (c.chinese_hsk?'<span class="tag">HSK '+esc(c.chinese_hsk)+'级</span>':'')+
-    (c.chinese_other?'<span class="tag">'+esc(c.chinese_other)+'</span>':'')+
-'</div></div>':''}
-${(c.english_req&&(c.english_dse||c.english_gaokao||c.english_toefl_pbt||c.english_toefl_ibt||c.english_ielts||c.english_cet4||c.english_cet6||c.english_other))?'<div class="detail-item detail-full"><div class="detail-label">英文考试要求</div><div class="detail-value">'+
-    (c.english_dse?'<span class="tag">DSE '+esc(c.english_dse)+'级</span>':'')+
-    (c.english_gaokao?'<span class="tag">高考 '+esc(c.english_gaokao)+'分</span>':'')+
-    (c.english_toefl_pbt?'<span class="tag">TOEFL笔考 '+esc(c.english_toefl_pbt)+'分</span>':'')+
-    (c.english_toefl_ibt?'<span class="tag">TOEFL网考 '+esc(c.english_toefl_ibt)+'分</span>':'')+
-    (c.english_ielts?'<span class="tag">IELTS '+esc(c.english_ielts)+'分</span>':'')+
-    (c.english_cet4?'<span class="tag">CET-4 '+esc(c.english_cet4)+'分</span>':'')+
-    (c.english_cet6?'<span class="tag">CET-6 '+esc(c.english_cet6)+'分</span>':'')+
-    (c.english_other?'<span class="tag">'+esc(c.english_other)+'</span>':'')+
-'</div></div>':''}
+<div class="detail-item detail-full">
+    <div class="detail-label">中文要求</div>
+    <div class="detail-value" style="line-height:1.8">
+        <div>${c.chinese_req?'✅ 需要':'❌ 不需要'}${c.chinese_exempt?'（可免试）':''}</div>
+        ${(c.chinese_req&&(c.chinese_dse||c.chinese_gaokao||c.chinese_hsk||c.chinese_other))?'<div style="margin-top:4px">'+
+            (c.chinese_dse?'<span class="tag">DSE '+cs(c.chinese_dse)+'级</span>':'')+
+            (c.chinese_gaokao?'<span class="tag">高考 '+cs(c.chinese_gaokao)+'分</span>':'')+
+            (c.chinese_hsk?'<span class="tag">HSK '+cs(c.chinese_hsk)+'级</span>':'')+
+            (c.chinese_other?'<span class="tag">'+cs(c.chinese_other)+'</span>':'')+
+        '</div>':''}
+    </div>
+</div>
+<div class="detail-item detail-full">
+    <div class="detail-label">英文要求</div>
+    <div class="detail-value" style="line-height:1.8">
+        <div>${c.english_req?'✅ 需要':'❌ 不需要'}${c.english_exempt?'（可免试）':''}</div>
+        ${(c.english_req&&(c.english_dse||c.english_gaokao||c.english_toefl_pbt||c.english_toefl_ibt||c.english_ielts||c.english_cet4||c.english_cet6||c.english_other))?'<div style="margin-top:4px">'+
+            (c.english_dse?'<span class="tag">DSE '+cs(c.english_dse)+'级</span>':'')+
+            (c.english_gaokao?'<span class="tag">高考 '+cs(c.english_gaokao)+'分</span>':'')+
+            (c.english_toefl_pbt?'<span class="tag">TOEFL笔考 '+cs(c.english_toefl_pbt)+'分</span>':'')+
+            (c.english_toefl_ibt?'<span class="tag">TOEFL网考 '+cs(c.english_toefl_ibt)+'分</span>':'')+
+            (c.english_ielts?'<span class="tag">IELTS '+cs(c.english_ielts)+'分</span>':'')+
+            (c.english_cet4?'<span class="tag">CET-4 '+cs(c.english_cet4)+'分</span>':'')+
+            (c.english_cet6?'<span class="tag">CET-6 '+cs(c.english_cet6)+'分</span>':'')+
+            (c.english_other?'<span class="tag">'+cs(c.english_other)+'</span>':'')+
+        '</div>':''}
+    </div>
+</div>
 <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements||'—'}</div></div>
 <div class="detail-item"><div class="detail-label">面试要求</div><div class="detail-value">${c.interview_required?'✅ 需要':'❌ 不需要'}</div></div>
 </div>
@@ -841,7 +852,7 @@ function renderAuditLog(){
         'teaching_mode':'授课方式','study_mode':'学制','teaching_language':'授课语言',
         'academic_year':'学年','student_identity':'身份','tuition_local':'学费(本地)',
         'tuition_non_local':'学费(非本地)','deadline_local':'截止(本地)','deadline_non_local':'截止(非本地)',
-        'study_duration_ft':'全日制修读时间','study_duration_pt':'非全日制修读时间',
+        'study_duration_ft':'全日制修读时间','study_duration_pt':'兼读制修读时间',
         'chinese_exempt':'中文免试','english_exempt':'英文免试','interview_required':'面试要求',
         'qf_level':'资历架构','qr_number':'资历登记号','course_page_url':'课程主页','course_brochure_url':'课程简章'};
     tbody.innerHTML=logs.map(l=>{
@@ -920,7 +931,7 @@ const EXCEL_COLUMN_MAP = {
     '学制':'study_mode',
     '授课语言':'teaching_language',
     '全日制修读时间':'study_duration_ft','全日制修读时间（年）':'study_duration_ft',
-    '非全日制修读时间':'study_duration_pt','非全日制修读时间（年）':'study_duration_pt',
+    '兼读制修读时间':'study_duration_pt','兼读制修读时间（年）':'study_duration_pt',
     '学年':'academic_year',
     '身份':'student_identity',
     '学费（本地生）':'tuition_local','学费-本地生':'tuition_local','学费(本地生)':'tuition_local','学费本地':'tuition_local',
@@ -947,8 +958,8 @@ function downloadTemplate() {
         {
             '学校简称':'HKU','学科分类':'商科','课程名称（中文）':'金融学硕士','课程名称（英文）':'MFin',
             '授课方式':'授课式',
-            '学位':'硕士','授课形式':'面授','学制':'全日制/非全日制','授课语言':'英语',
-            '全日制修读时间':1,'非全日制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
+            '学位':'硕士','授课形式':'面授','学制':'全日制/兼读制','授课语言':'英语',
+            '全日制修读时间':1,'兼读制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
             '学费（本地生）':150000,'学费（非本地生）':300000,
             '截止报名（本地生）':'2027-01-31','截止报名（非本地生）':'2026-12-31',
             '资历架构':'QF Level 6','资历名册登记号码':'QR123456','学历要求':'持有认可学士学位',
@@ -962,7 +973,7 @@ function downloadTemplate() {
             '学校简称':'CUHK','学科分类':'工科','课程名称（中文）':'计算机科学硕士','课程名称（英文）':'MSc CS',
             '授课方式':'授课式',
             '学位':'硕士','授课形式':'面授','学制':'仅全日制','授课语言':'英语',
-            '全日制修读时间':1,'非全日制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
+            '全日制修读时间':1,'兼读制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
             '学费（本地生）':120000,'学费（非本地生）':250000,
             '截止报名（本地生）':'2027-02-28','截止报名（非本地生）':'2027-01-15',
             '资历架构':'QF Level 6','资历名册登记号码':'QR789012','学历要求':'持有计算机或相关学科学士学位',
