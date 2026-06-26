@@ -711,7 +711,10 @@ def add_course():
                   data.get('modified_by', 'admin'))
         return jsonify({'id': course_id, 'course_code': new_code, 'message': '课程添加成功'}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        import traceback
+        err_detail = traceback.format_exc()
+        app.logger.error(f"add_course error: {err_detail}")
+        return jsonify({'error': str(e) or repr(e), 'detail': err_detail[-500:]}), 400
 
 
 @app.route('/api/courses/batch', methods=['POST'])
