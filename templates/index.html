@@ -520,8 +520,10 @@
                                 <th>修读时间</th>
                                 <th>学年</th>
                                 <th>身份</th>
-                                <th>学费（港币）</th>
-                                <th>截止报名</th>
+                                <th>全日制学费（港币）</th>
+                                <th>兼读制学费（港币）</th>
+                                <th>截止报名（秋季）</th>
+                                <th>截止报名（春季）</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -698,20 +700,36 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>学费 - 本地生 (HKD)</label>
-                        <input type="number" id="course-tuition-local" step="1000" min="0">
+                        <label>全日制学费 - 本地生 (HKD)</label>
+                        <input type="number" id="course-tuition-ft-local" step="1000" min="0">
                     </div>
                     <div class="form-group">
-                        <label>学费 - 非本地生 (HKD)</label>
-                        <input type="number" id="course-tuition-nonlocal" step="1000" min="0">
+                        <label>全日制学费 - 非本地生 (HKD)</label>
+                        <input type="number" id="course-tuition-ft-nonlocal" step="1000" min="0">
                     </div>
                     <div class="form-group">
-                        <label>截止报名 - 本地生</label>
-                        <input type="date" id="course-deadline-local">
+                        <label>兼读制学费 - 本地生 (HKD)</label>
+                        <input type="number" id="course-tuition-pt-local" step="1000" min="0">
                     </div>
                     <div class="form-group">
-                        <label>截止报名 - 非本地生</label>
-                        <input type="date" id="course-deadline-nonlocal">
+                        <label>兼读制学费 - 非本地生 (HKD)</label>
+                        <input type="number" id="course-tuition-pt-nonlocal" step="1000" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>截止报名（秋季） - 本地生</label>
+                        <input type="date" id="course-deadline-autumn-local">
+                    </div>
+                    <div class="form-group">
+                        <label>截止报名（秋季） - 非本地生</label>
+                        <input type="date" id="course-deadline-autumn-nonlocal">
+                    </div>
+                    <div class="form-group">
+                        <label>截止报名（春季） - 本地生</label>
+                        <input type="date" id="course-deadline-spring-local">
+                    </div>
+                    <div class="form-group">
+                        <label>截止报名（春季） - 非本地生</label>
+                        <input type="date" id="course-deadline-spring-nonlocal">
                     </div>
                     <div class="form-group">
                         <label>资历架构</label>
@@ -1117,7 +1135,7 @@ async function filterCourses() {
 function renderCourses() {
     const tbody = document.getElementById('courses-tbody');
     if (allCourses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="16"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程，请调整筛选条件或添加新课程</p></div></td></tr>';
         updateAdminUI();
         return;
     }
@@ -1136,8 +1154,10 @@ function renderCourses() {
             <td style="font-size:13px">${c.study_duration_display||'—'}</td>
             <td>${c.academic_year}</td>
             <td style="font-size:12px;line-height:1.6;white-space:nowrap">${identityHtml}</td>
-            <td style="font-size:12px;line-height:1.6">${c.tuition_display||'—'}</td>
-            <td style="font-size:12px;line-height:1.6">${c.deadline_display||'—'}</td>
+            <td style="font-size:12px;line-height:1.6">${c.tuition_ft_display||'—'}</td>
+            <td style="font-size:12px;line-height:1.6">${c.tuition_pt_display||'—'}</td>
+            <td style="font-size:12px;line-height:1.6">${c.deadline_autumn_display||'—'}</td>
+            <td style="font-size:12px;line-height:1.6">${c.deadline_spring_display||'—'}</td>
             <td>
                 <button class="btn btn-outline btn-xs admin-only" onclick="editCourse(${c.id})">✏️</button>
                 <button class="btn btn-danger btn-xs admin-only" onclick="deleteCourse(${c.id}, '${c.course_name_cn}')">🗑</button>
@@ -1224,10 +1244,14 @@ function openCourseModal(id = null) {
             document.getElementById('course-identity').value = c.student_identity;
             document.getElementById('course-degree').value = c.degree || '';
             document.getElementById('course-format').value = c.teaching_format || '面授';
-            document.getElementById('course-tuition-local').value = c.tuition_local || '';
-            document.getElementById('course-tuition-nonlocal').value = c.tuition_non_local || '';
-            document.getElementById('course-deadline-local').value = c.deadline_local || '';
-            document.getElementById('course-deadline-nonlocal').value = c.deadline_non_local || '';
+            document.getElementById('course-tuition-ft-local').value = c.tuition_ft_local || '';
+            document.getElementById('course-tuition-ft-nonlocal').value = c.tuition_ft_nonlocal || '';
+            document.getElementById('course-tuition-pt-local').value = c.tuition_pt_local || '';
+            document.getElementById('course-tuition-pt-nonlocal').value = c.tuition_pt_nonlocal || '';
+            document.getElementById('course-deadline-autumn-local').value = c.deadline_autumn_local || '';
+            document.getElementById('course-deadline-autumn-nonlocal').value = c.deadline_autumn_nonlocal || '';
+            document.getElementById('course-deadline-spring-local').value = c.deadline_spring_local || '';
+            document.getElementById('course-deadline-spring-nonlocal').value = c.deadline_spring_nonlocal || '';
             document.getElementById('course-qf').value = c.qf_level || '';
             document.getElementById('course-qr').value = c.qr_number || '';
             document.getElementById('course-edu-req').value = c.education_requirement || '';
@@ -1290,10 +1314,14 @@ async function saveCourse() {
         teaching_language: document.getElementById('course-language').value,
         academic_year: document.getElementById('course-academic-year').value,
         student_identity: document.getElementById('course-identity').value,
-        tuition_local: parseFloat(document.getElementById('course-tuition-local').value) || 0,
-        tuition_non_local: parseFloat(document.getElementById('course-tuition-nonlocal').value) || 0,
-        deadline_local: document.getElementById('course-deadline-local').value,
-        deadline_non_local: document.getElementById('course-deadline-nonlocal').value,
+        tuition_ft_local: parseFloat(document.getElementById('course-tuition-ft-local').value) || 0,
+        tuition_ft_nonlocal: parseFloat(document.getElementById('course-tuition-ft-nonlocal').value) || 0,
+        tuition_pt_local: parseFloat(document.getElementById('course-tuition-pt-local').value) || 0,
+        tuition_pt_nonlocal: parseFloat(document.getElementById('course-tuition-pt-nonlocal').value) || 0,
+        deadline_autumn_local: document.getElementById('course-deadline-autumn-local').value,
+        deadline_autumn_nonlocal: document.getElementById('course-deadline-autumn-nonlocal').value,
+        deadline_spring_local: document.getElementById('course-deadline-spring-local').value,
+        deadline_spring_nonlocal: document.getElementById('course-deadline-spring-nonlocal').value,
         qf_level: document.getElementById('course-qf').value,
         qr_number: document.getElementById('course-qr').value.trim(),
         education_requirement: document.getElementById('course-edu-req').value.trim(),
@@ -1389,6 +1417,14 @@ async function viewCourseDetail(id) {
         const tuitionNonLocal = c.tuition_non_local ? formatCurrency(c.tuition_non_local) : 'HKD-';
         const deadlineLocal = c.deadline_local ? formatDate(c.deadline_local) : '-';
         const deadlineNonLocal = c.deadline_non_local ? formatDate(c.deadline_non_local) : '-';
+        const tuitionFtLocal = c.tuition_ft_local ? formatCurrency(c.tuition_ft_local) : 'HKD-';
+        const tuitionFtNonLocal = c.tuition_ft_nonlocal ? formatCurrency(c.tuition_ft_nonlocal) : 'HKD-';
+        const tuitionPtLocal = c.tuition_pt_local ? formatCurrency(c.tuition_pt_local) : 'HKD-';
+        const tuitionPtNonLocal = c.tuition_pt_nonlocal ? formatCurrency(c.tuition_pt_nonlocal) : 'HKD-';
+        const deadlineAutumnLocal = c.deadline_autumn_local ? formatDate(c.deadline_autumn_local) : '-';
+        const deadlineAutumnNonLocal = c.deadline_autumn_nonlocal ? formatDate(c.deadline_autumn_nonlocal) : '-';
+        const deadlineSpringLocal = c.deadline_spring_local ? formatDate(c.deadline_spring_local) : '-';
+        const deadlineSpringNonLocal = c.deadline_spring_nonlocal ? formatDate(c.deadline_spring_nonlocal) : '-';
 
         body.innerHTML = `
             <!-- 1. 课程概要 -->
@@ -1413,8 +1449,10 @@ async function viewCourseDetail(id) {
                 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${c.teaching_format || '—'}</div></div>
                 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level || '-'}</div></div>
                 <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number || '-'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">学费（港币）</div><div class="detail-value">${tuitionLocal}（本地生）/ ${tuitionNonLocal}（非本地生）</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">截止报名</div><div class="detail-value">${deadlineLocal}（本地生）/ ${deadlineNonLocal}（非本地生）</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">全日制学费（港币）</div><div class="detail-value">${tuitionFtLocal}（本地生）/ ${tuitionFtNonLocal}（非本地生）</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">兼读制学费（港币）</div><div class="detail-value">${tuitionPtLocal}（本地生）/ ${tuitionPtNonLocal}（非本地生）</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">截止报名（秋季）</div><div class="detail-value">${deadlineAutumnLocal}（本地生）/ ${deadlineAutumnNonLocal}（非本地生）</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">截止报名（春季）</div><div class="detail-value">${deadlineSpringLocal}（本地生）/ ${deadlineSpringNonLocal}（非本地生）</div></div>
             </div>
 
             <!-- 2. 报读要求 -->
@@ -1596,6 +1634,33 @@ const EXCEL_COLUMN_MAP = {
     '课程介绍': 'course_description',
     '课程主页': 'course_page_url',
     '课程简章': 'course_brochure_url',
+
+    // --- 学费（按修读模式） ---
+    '全日制学费（港币）（本地生）': 'tuition_ft_local',
+    '全日制学费（港币）（非本地生）': 'tuition_ft_nonlocal',
+    '兼读制学费（港币）（本地生）': 'tuition_pt_local',
+    '兼读制学费（港币）（非本地生）': 'tuition_pt_nonlocal',
+    '全日制学费-本地生': 'tuition_ft_local',
+    '全日制学费-非本地生': 'tuition_ft_nonlocal',
+    '兼读制学费-本地生': 'tuition_pt_local',
+    '兼读制学费-非本地生': 'tuition_pt_nonlocal',
+    '全日制学费本地': 'tuition_ft_local',
+    '全日制学费非本地': 'tuition_ft_nonlocal',
+    '兼读制学费本地': 'tuition_pt_local',
+    '兼读制学费非本地': 'tuition_pt_nonlocal',
+    // --- 截止报名（按学期） ---
+    '截止报名（秋季）（本地生）': 'deadline_autumn_local',
+    '截止报名（秋季）（非本地生）': 'deadline_autumn_nonlocal',
+    '截止报名（春季）（本地生）': 'deadline_spring_local',
+    '截止报名（春季）（非本地生）': 'deadline_spring_nonlocal',
+    '截止报名（秋季）-本地生': 'deadline_autumn_local',
+    '截止报名（秋季）-非本地生': 'deadline_autumn_nonlocal',
+    '截止报名（春季）-本地生': 'deadline_spring_local',
+    '截止报名（春季）-非本地生': 'deadline_spring_nonlocal',
+    '截止(秋季)本地': 'deadline_autumn_local',
+    '截止(秋季)非本地': 'deadline_autumn_nonlocal',
+    '截止(春季)本地': 'deadline_spring_local',
+    '截止(春季)非本地': 'deadline_spring_nonlocal',
 };
 
 // 必填字段
@@ -1618,10 +1683,14 @@ function downloadTemplate() {
             '兼读制修读时间': 2,
             '学年': '2026/2027',
             '身份': '本地生/非本地生',
-            '学费（本地生）': 150000,
-            '学费（非本地生）': 300000,
-            '截止报名（本地生）': '2027-01-31',
-            '截止报名（非本地生）': '2026-12-31',
+            '全日制学费（港币）（本地生）': 150000,
+            '全日制学费（港币）（非本地生）': 300000,
+            '兼读制学费（港币）（本地生）': 120000,
+            '兼读制学费（港币）（非本地生）': 250000,
+            '截止报名（秋季）（本地生）': '2027-01-31',
+            '截止报名（秋季）（非本地生）': '2026-12-31',
+            '截止报名（春季）（本地生）': '2027-06-30',
+            '截止报名（春季）（非本地生）': '2027-05-31',
             '资历架构': 'QF Level 6',
             '资历名册登记号码': 'QR123456',
             '学历要求': '持有认可学士学位',
@@ -1767,6 +1836,10 @@ async function handleExcelUpload(event) {
             // 数值转换
             if (course.tuition_local) course.tuition_local = parseFloat(String(course.tuition_local).replace(/,/g, '')) || 0;
             if (course.tuition_non_local) course.tuition_non_local = parseFloat(String(course.tuition_non_local).replace(/,/g, '')) || 0;
+            if (course.tuition_ft_local) course.tuition_ft_local = parseFloat(String(course.tuition_ft_local).replace(/,/g, '')) || 0;
+            if (course.tuition_ft_nonlocal) course.tuition_ft_nonlocal = parseFloat(String(course.tuition_ft_nonlocal).replace(/,/g, '')) || 0;
+            if (course.tuition_pt_local) course.tuition_pt_local = parseFloat(String(course.tuition_pt_local).replace(/,/g, '')) || 0;
+            if (course.tuition_pt_nonlocal) course.tuition_pt_nonlocal = parseFloat(String(course.tuition_pt_nonlocal).replace(/,/g, '')) || 0;
             if (course.study_duration_ft) course.study_duration_ft = parseFloat(String(course.study_duration_ft).replace(/,/g, '')) || null;
             if (course.study_duration_pt) course.study_duration_pt = parseFloat(String(course.study_duration_pt).replace(/,/g, '')) || null;
 
@@ -1785,6 +1858,10 @@ async function handleExcelUpload(event) {
                     'course_name_cn': '课程名称', 'teaching_mode': '授课方式',
                     'study_mode': '学制', 'teaching_language': '授课语言',
                     'academic_year': '学年', 'student_identity': '身份',
+                    'tuition_ft_local': '全日制学费（本地生）', 'tuition_ft_nonlocal': '全日制学费（非本地生）',
+                    'tuition_pt_local': '兼读制学费（本地生）', 'tuition_pt_nonlocal': '兼读制学费（非本地生）',
+                    'deadline_autumn_local': '截止报名（秋季）（本地生）', 'deadline_autumn_nonlocal': '截止报名（秋季）（非本地生）',
+                    'deadline_spring_local': '截止报名（春季）（本地生）', 'deadline_spring_nonlocal': '截止报名（春季）（非本地生）',
                 };
                 const missingLabels = missingFields.map(f => fieldLabels[f] || f).join('、');
                 errors.push(`第 ${idx + 2} 行：缺少必填字段 ${missingLabels}`);

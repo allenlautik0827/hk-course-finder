@@ -157,6 +157,14 @@ def init_db():
         cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS chinese_req INTEGER DEFAULT 0")
         cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS english_req INTEGER DEFAULT 0")
         cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS english_cet6 TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS deadline_autumn_local TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS deadline_autumn_nonlocal TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS deadline_spring_local TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS deadline_spring_nonlocal TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS tuition_ft_local REAL DEFAULT 0")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS tuition_ft_nonlocal REAL DEFAULT 0")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS tuition_pt_local REAL DEFAULT 0")
+        cur.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS tuition_pt_nonlocal REAL DEFAULT 0")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS audit_log (
                 id SERIAL PRIMARY KEY,
@@ -268,6 +276,38 @@ def init_db():
             pass
         try:
             cursor.execute("ALTER TABLE courses ADD COLUMN english_cet6 TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN deadline_autumn_local TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN deadline_autumn_nonlocal TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN deadline_spring_local TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN deadline_spring_nonlocal TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN tuition_ft_local REAL DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN tuition_ft_nonlocal REAL DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN tuition_pt_local REAL DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN tuition_pt_nonlocal REAL DEFAULT 0")
         except Exception:
             pass
         db.commit()
@@ -549,7 +589,7 @@ def format_course(c):
     else:
         study_duration = '-'
 
-    # 格式化学费
+    # 格式化学费（旧字段，向后兼容）
     tl_val = c.get('tuition_local') or 0
     tn_val = c.get('tuition_non_local') or 0
     tl = f"HKD{int(tl_val):,}" if tl_val else None
@@ -563,7 +603,35 @@ def format_course(c):
     else:
         tuition = '—'
 
-    # 格式化截止日期
+    # 格式化全日制学费
+    tfl = c.get('tuition_ft_local') or 0
+    tfn = c.get('tuition_ft_nonlocal') or 0
+    ft_local_str = f"HKD{int(tfl):,}" if tfl else ''
+    ft_nonlocal_str = f"HKD{int(tfn):,}" if tfn else ''
+    if ft_local_str and ft_nonlocal_str and ft_local_str != ft_nonlocal_str:
+        tuition_ft_display = f"{ft_local_str}（本地生） / {ft_nonlocal_str}（非本地生）"
+    elif ft_local_str:
+        tuition_ft_display = f"{ft_local_str}（本地生）"
+    elif ft_nonlocal_str:
+        tuition_ft_display = f"{ft_nonlocal_str}（非本地生）"
+    else:
+        tuition_ft_display = '—'
+
+    # 格式化兼读制学费
+    tpl = c.get('tuition_pt_local') or 0
+    tpn = c.get('tuition_pt_nonlocal') or 0
+    pt_local_str = f"HKD{int(tpl):,}" if tpl else ''
+    pt_nonlocal_str = f"HKD{int(tpn):,}" if tpn else ''
+    if pt_local_str and pt_nonlocal_str and pt_local_str != pt_nonlocal_str:
+        tuition_pt_display = f"{pt_local_str}（本地生） / {pt_nonlocal_str}（非本地生）"
+    elif pt_local_str:
+        tuition_pt_display = f"{pt_local_str}（本地生）"
+    elif pt_nonlocal_str:
+        tuition_pt_display = f"{pt_nonlocal_str}（非本地生）"
+    else:
+        tuition_pt_display = '—'
+
+    # 格式化截止日期（旧字段，向后兼容）
     dl = c.get('deadline_local') or ''
     dn = c.get('deadline_non_local') or ''
     if dl and dn and dl != dn:
@@ -574,6 +642,30 @@ def format_course(c):
         deadline = f"{dn}（非本地生）"
     else:
         deadline = '—'
+
+    # 格式化秋季截止报名
+    dal = c.get('deadline_autumn_local') or ''
+    dan = c.get('deadline_autumn_nonlocal') or ''
+    if dal and dan and dal != dan:
+        deadline_autumn_display = f"{dal}（本地生） / {dan}（非本地生）"
+    elif dal:
+        deadline_autumn_display = f"{dal}（本地生）"
+    elif dan:
+        deadline_autumn_display = f"{dan}（非本地生）"
+    else:
+        deadline_autumn_display = '—'
+
+    # 格式化春季截止报名
+    dsl = c.get('deadline_spring_local') or ''
+    dsn = c.get('deadline_spring_nonlocal') or ''
+    if dsl and dsn and dsl != dsn:
+        deadline_spring_display = f"{dsl}（本地生） / {dsn}（非本地生）"
+    elif dsl:
+        deadline_spring_display = f"{dsl}（本地生）"
+    elif dsn:
+        deadline_spring_display = f"{dsn}（非本地生）"
+    else:
+        deadline_spring_display = '—'
 
     return {
         'id': c['id'],
@@ -598,9 +690,21 @@ def format_course(c):
         'tuition_local': tl_val,
         'tuition_non_local': tn_val,
         'tuition_display': tuition,
+        'tuition_ft_local': c.get('tuition_ft_local') or 0,
+        'tuition_ft_nonlocal': c.get('tuition_ft_nonlocal') or 0,
+        'tuition_ft_display': tuition_ft_display,
+        'tuition_pt_local': c.get('tuition_pt_local') or 0,
+        'tuition_pt_nonlocal': c.get('tuition_pt_nonlocal') or 0,
+        'tuition_pt_display': tuition_pt_display,
         'deadline_local': dl,
         'deadline_non_local': dn,
         'deadline_display': deadline,
+        'deadline_autumn_local': c.get('deadline_autumn_local') or '',
+        'deadline_autumn_nonlocal': c.get('deadline_autumn_nonlocal') or '',
+        'deadline_autumn_display': deadline_autumn_display,
+        'deadline_spring_local': c.get('deadline_spring_local') or '',
+        'deadline_spring_nonlocal': c.get('deadline_spring_nonlocal') or '',
+        'deadline_spring_display': deadline_spring_display,
         'qf_level': c.get('qf_level', ''),
         'qr_number': c.get('qr_number', ''),
         'education_requirement': c.get('education_requirement', ''),
@@ -777,6 +881,14 @@ def add_course():
             1 if data.get('english_req') else 0,
             data.get('other_requirements', ''),
             1 if data.get('interview_required') else 0,
+            data.get('deadline_autumn_local', ''),
+            data.get('deadline_autumn_nonlocal', ''),
+            data.get('deadline_spring_local', ''),
+            data.get('deadline_spring_nonlocal', ''),
+            data.get('tuition_ft_local', 0),
+            data.get('tuition_ft_nonlocal', 0),
+            data.get('tuition_pt_local', 0),
+            data.get('tuition_pt_nonlocal', 0),
             data.get('course_description', ''), data.get('course_page_url', ''), data.get('course_brochure_url', '')
         ))
         sql_commit()
@@ -899,6 +1011,10 @@ def batch_sync_courses():
                 get_str('english_ielts'), get_str('english_cet4'), get_str('english_cet6'), get_str('english_other'),
                 get_bool('chinese_req'), get_bool('english_req'),
                 get_str('other_requirements'), get_bool('interview_required'),
+                get_str('deadline_autumn_local'), get_str('deadline_autumn_nonlocal'),
+                get_str('deadline_spring_local'), get_str('deadline_spring_nonlocal'),
+                get_num('tuition_ft_local'), get_num('tuition_ft_nonlocal'),
+                get_num('tuition_pt_local'), get_num('tuition_pt_nonlocal'),
                 get_str('course_description'), get_str('course_page_url'), get_str('course_brochure_url')
             ))
             sql_commit()
@@ -932,6 +1048,10 @@ def update_course(course_id):
         'teaching_language', 'academic_year', 'student_identity',
         'degree', 'teaching_format',
         'tuition_local', 'tuition_non_local', 'deadline_local', 'deadline_non_local',
+        'deadline_autumn_local', 'deadline_autumn_nonlocal',
+        'deadline_spring_local', 'deadline_spring_nonlocal',
+        'tuition_ft_local', 'tuition_ft_nonlocal',
+        'tuition_pt_local', 'tuition_pt_nonlocal',
         'qf_level', 'qr_number', 'education_requirement',
         'chinese_dse', 'chinese_gaokao', 'chinese_hsk', 'chinese_other',
         'english_dse', 'english_gaokao', 'english_toefl_pbt', 'english_toefl_ibt',
