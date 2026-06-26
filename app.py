@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 香港留学课程检索系统 - HK Course Finder
-Backend: Flask + SQLite
+Backend: Flask + SQLite (local) / PostgreSQL (production)
 """
 
 import sqlite3
@@ -16,19 +16,37 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hk-course-finder-2026'
 CORS(app)  # 允许跨域请求（支持 CloudStudio 等静态页面同步数据）
 
-# 数据库路径
+# ============================================================
+# 数据库模式检测：PostgreSQL（生产）or SQLite（本地）
+# ============================================================
+
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+# Render 有时返回 postgres:// 需要改成 postgresql://
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+USE_PG = bool(DATABASE_URL)
+
+# SQLite 路径（仅本地开发使用）
 DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db'))
 
 # ============================================================
-# 数据库工具函数
+# 数据库工具函数（统一接口）
 # ============================================================
 
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA journal_mode=WAL")
-        g.db.execute("PRAGMA foreign_keys=ON")
+        if USE_PG:
+            import psycopg2
+            import psycopg2.extras
+            conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+            g.db = conn
+        else:
+            g.db = sqlite3.connect(DB_PATH)
+            g.db.row_factory = sqlite3.Row
+            g.db.execute("PRAGMA journal_mode=WAL")
+            g.db.execute("PRAGMA foreign_keys=ON")
     return g.db
 
 @app.teardown_appcontext
@@ -37,83 +55,188 @@ def close_db(exception):
     if db is not None:
         db.close()
 
+def db_execute(query, params=None, fetchone=False, fetchall=False, lastrowid=False):
+    """统一执行 SQL，兼容 SQLite 和 PostgreSQL"""
+    db = get_db()
+    if USE_PG:
+        # PostgreSQL 使用 %s 占位符
+        pg_query = query.replace('?', '%s')
+        # 处理 SQLite 特有的 AUTOINCREMENT 语法（init 时不走这里）
+        cur = db.cursor()
+        cur.execute(pg_query, params or ())
+        if fetchone:
+            return cur.fetchone()
+        if fetchall:
+            return cur.fetchall()
+        if lastrowid:
+            # PostgreSQL 需要 RETURNING id
+            return None  # 由调用方处理
+        return cur
+    else:
+        cur = db.execute(query, params or ())
+        if fetchone:
+            return cur.fetchone()
+        if fetchall:
+            return cur.fetchall()
+        if lastrowid:
+            return cur.lastrowid
+        return cur
+
+def db_commit():
+    get_db().commit()
+
 def init_db():
     """初始化数据库表结构"""
-    db = sqlite3.connect(DB_PATH)
-    db.execute("PRAGMA foreign_keys=ON")
-    cursor = db.cursor()
+    if USE_PG:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS schools (
+                id SERIAL PRIMARY KEY,
+                name_cn TEXT NOT NULL,
+                abbreviation TEXT NOT NULL UNIQUE,
+                name_en TEXT NOT NULL,
+                website TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS courses (
+                id SERIAL PRIMARY KEY,
+                course_code TEXT UNIQUE NOT NULL,
+                school_id INTEGER NOT NULL,
+                subject_category TEXT NOT NULL,
+                course_name_cn TEXT NOT NULL,
+                course_name_en TEXT NOT NULL DEFAULT '',
+                teaching_mode TEXT NOT NULL,
+                study_mode TEXT NOT NULL,
+                study_duration_ft REAL,
+                study_duration_pt REAL,
+                teaching_language TEXT NOT NULL,
+                academic_year TEXT NOT NULL,
+                student_identity TEXT NOT NULL,
+                tuition_local REAL DEFAULT 0,
+                tuition_non_local REAL DEFAULT 0,
+                deadline_local TEXT DEFAULT '',
+                deadline_non_local TEXT DEFAULT '',
+                qf_level TEXT DEFAULT '',
+                qr_number TEXT DEFAULT '',
+                education_requirement TEXT DEFAULT '',
+                chinese_exempt INTEGER DEFAULT 0,
+                chinese_dse TEXT DEFAULT '',
+                chinese_gaokao TEXT DEFAULT '',
+                chinese_hsk TEXT DEFAULT '',
+                chinese_other TEXT DEFAULT '',
+                english_exempt INTEGER DEFAULT 0,
+                english_dse TEXT DEFAULT '',
+                english_gaokao TEXT DEFAULT '',
+                english_toefl_pbt TEXT DEFAULT '',
+                english_toefl_ibt TEXT DEFAULT '',
+                english_ielts TEXT DEFAULT '',
+                english_cet4 TEXT DEFAULT '',
+                english_other TEXT DEFAULT '',
+                other_requirements TEXT DEFAULT '',
+                interview_required INTEGER DEFAULT 0,
+                course_description TEXT DEFAULT '',
+                course_page_url TEXT DEFAULT '',
+                course_brochure_url TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id SERIAL PRIMARY KEY,
+                table_name TEXT NOT NULL,
+                record_id INTEGER,
+                record_name TEXT DEFAULT '',
+                action TEXT NOT NULL,
+                changes TEXT DEFAULT '{}',
+                modified_by TEXT DEFAULT 'admin',
+                modified_date TEXT NOT NULL,
+                modified_time TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+        conn.close()
+    else:
+        db = sqlite3.connect(DB_PATH)
+        db.execute("PRAGMA foreign_keys=ON")
+        cursor = db.cursor()
+        cursor.executescript('''
+            CREATE TABLE IF NOT EXISTS schools (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name_cn TEXT NOT NULL,
+                abbreviation TEXT NOT NULL UNIQUE,
+                name_en TEXT NOT NULL,
+                website TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
 
-    cursor.executescript('''
-        CREATE TABLE IF NOT EXISTS schools (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name_cn TEXT NOT NULL,
-            abbreviation TEXT NOT NULL UNIQUE,
-            name_en TEXT NOT NULL,
-            website TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
+            CREATE TABLE IF NOT EXISTS courses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                course_code TEXT UNIQUE NOT NULL,
+                school_id INTEGER NOT NULL,
+                subject_category TEXT NOT NULL,
+                course_name_cn TEXT NOT NULL,
+                course_name_en TEXT NOT NULL DEFAULT '',
+                teaching_mode TEXT NOT NULL,
+                study_mode TEXT NOT NULL,
+                study_duration_ft REAL,
+                study_duration_pt REAL,
+                teaching_language TEXT NOT NULL,
+                academic_year TEXT NOT NULL,
+                student_identity TEXT NOT NULL,
+                tuition_local REAL DEFAULT 0,
+                tuition_non_local REAL DEFAULT 0,
+                deadline_local TEXT DEFAULT '',
+                deadline_non_local TEXT DEFAULT '',
+                qf_level TEXT DEFAULT '',
+                qr_number TEXT DEFAULT '',
+                education_requirement TEXT DEFAULT '',
+                chinese_exempt INTEGER DEFAULT 0,
+                chinese_dse TEXT DEFAULT '',
+                chinese_gaokao TEXT DEFAULT '',
+                chinese_hsk TEXT DEFAULT '',
+                chinese_other TEXT DEFAULT '',
+                english_exempt INTEGER DEFAULT 0,
+                english_dse TEXT DEFAULT '',
+                english_gaokao TEXT DEFAULT '',
+                english_toefl_pbt TEXT DEFAULT '',
+                english_toefl_ibt TEXT DEFAULT '',
+                english_ielts TEXT DEFAULT '',
+                english_cet4 TEXT DEFAULT '',
+                english_other TEXT DEFAULT '',
+                other_requirements TEXT DEFAULT '',
+                interview_required INTEGER DEFAULT 0,
+                course_description TEXT DEFAULT '',
+                course_page_url TEXT DEFAULT '',
+                course_brochure_url TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+            );
 
-        CREATE TABLE IF NOT EXISTS courses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            course_code TEXT UNIQUE NOT NULL,
-            school_id INTEGER NOT NULL,
-            subject_category TEXT NOT NULL,
-            course_name_cn TEXT NOT NULL,
-            course_name_en TEXT NOT NULL DEFAULT '',
-            teaching_mode TEXT NOT NULL,
-            study_mode TEXT NOT NULL,
-            study_duration_ft REAL,
-            study_duration_pt REAL,
-            teaching_language TEXT NOT NULL,
-            academic_year TEXT NOT NULL,
-            student_identity TEXT NOT NULL,
-            tuition_local REAL DEFAULT 0,
-            tuition_non_local REAL DEFAULT 0,
-            deadline_local TEXT DEFAULT '',
-            deadline_non_local TEXT DEFAULT '',
-            qf_level TEXT DEFAULT '',
-            qr_number TEXT DEFAULT '',
-            education_requirement TEXT DEFAULT '',
-            chinese_exempt INTEGER DEFAULT 0,
-            chinese_dse TEXT DEFAULT '',
-            chinese_gaokao TEXT DEFAULT '',
-            chinese_hsk TEXT DEFAULT '',
-            chinese_other TEXT DEFAULT '',
-            english_exempt INTEGER DEFAULT 0,
-            english_dse TEXT DEFAULT '',
-            english_gaokao TEXT DEFAULT '',
-            english_toefl_pbt TEXT DEFAULT '',
-            english_toefl_ibt TEXT DEFAULT '',
-            english_ielts TEXT DEFAULT '',
-            english_cet4 TEXT DEFAULT '',
-            english_other TEXT DEFAULT '',
-            other_requirements TEXT DEFAULT '',
-            interview_required INTEGER DEFAULT 0,
-            course_description TEXT DEFAULT '',
-            course_page_url TEXT DEFAULT '',
-            course_brochure_url TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS audit_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            table_name TEXT NOT NULL,
-            record_id INTEGER,
-            record_name TEXT DEFAULT '',
-            action TEXT NOT NULL,
-            changes TEXT DEFAULT '{}',
-            modified_by TEXT DEFAULT 'admin',
-            modified_date TEXT NOT NULL,
-            modified_time TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    ''')
-
-    db.commit()
-    db.close()
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                table_name TEXT NOT NULL,
+                record_id INTEGER,
+                record_name TEXT DEFAULT '',
+                action TEXT NOT NULL,
+                changes TEXT DEFAULT '{}',
+                modified_by TEXT DEFAULT 'admin',
+                modified_date TEXT NOT NULL,
+                modified_time TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        db.commit()
+        db.close()
 
 def seed_schools():
     """预置18所香港高校数据"""
@@ -138,29 +261,116 @@ def seed_schools():
         ('香港演艺学院', 'HKAPA', 'The Hong Kong Academy for Performing Arts', 'https://www.hkapa.edu/tch'),
     ]
 
-    db = sqlite3.connect(DB_PATH)
-    cursor = db.cursor()
-    cursor.execute("SELECT COUNT(*) FROM schools")
-    count = cursor.fetchone()[0]
-    if count == 0:
-        cursor.executemany(
-            "INSERT INTO schools (name_cn, abbreviation, name_en, website) VALUES (?, ?, ?, ?)",
-            schools
-        )
-        db.commit()
-    db.close()
+    if USE_PG:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM schools")
+        count = cur.fetchone()[0]
+        if count == 0:
+            cur.executemany(
+                "INSERT INTO schools (name_cn, abbreviation, name_en, website) VALUES (%s, %s, %s, %s) ON CONFLICT (abbreviation) DO NOTHING",
+                schools
+            )
+            conn.commit()
+        conn.close()
+    else:
+        db = sqlite3.connect(DB_PATH)
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM schools")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.executemany(
+                "INSERT INTO schools (name_cn, abbreviation, name_en, website) VALUES (?, ?, ?, ?)",
+                schools
+            )
+            db.commit()
+        db.close()
+
+def db_row_to_dict(row):
+    """将数据库行转换为字典（兼容 SQLite Row 和 psycopg2 RealDictRow）"""
+    if row is None:
+        return None
+    if isinstance(row, dict):
+        return dict(row)
+    return dict(row)
 
 def log_audit(table_name, record_id, record_name, action, changes, modified_by='admin'):
     """记录审计日志"""
     now = datetime.now()
     db = get_db()
-    db.execute(
-        """INSERT INTO audit_log (table_name, record_id, record_name, action, changes, modified_by, modified_date, modified_time)
+    q = """INSERT INTO audit_log (table_name, record_id, record_name, action, changes, modified_by, modified_date, modified_time)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
+    p = (table_name, record_id, record_name, action, json.dumps(changes, ensure_ascii=False),
+         modified_by, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S'))
+    if USE_PG:
+        cur = db.cursor()
+        cur.execute(q.replace('?', '%s'), p)
+    else:
+        db.execute(q, p)
+    db.commit()
+
+# ============================================================
+# 通用 SQL 执行助手（兼容 SQLite 和 PostgreSQL）
+# ============================================================
+
+def sql(query, params=None):
+    """执行 SQL 并返回 cursor，自动将 ? 转为 %s（PostgreSQL）"""
+    db = get_db()
+    p = params or ()
+    if USE_PG:
+        cur = db.cursor()
+        cur.execute(query.replace('?', '%s'), p)
+        return cur
+    else:
+        return db.execute(query, p)
+
+def sql_one(query, params=None):
+    """执行 SQL，返回第一行（字典）"""
+    row = sql(query, params).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+def sql_all(query, params=None):
+    """执行 SQL，返回所有行（字典列表）"""
+    rows = sql(query, params).fetchall()
+    return [dict(r) for r in rows]
+
+def sql_insert(query, params=None):
+    """执行 INSERT，返回新行 id（兼容两种数据库）"""
+    db = get_db()
+    p = params or ()
+    if USE_PG:
+        # 附加 RETURNING id
+        pg_query = query.replace('?', '%s')
+        if 'RETURNING' not in pg_query.upper():
+            pg_query += ' RETURNING id'
+        cur = db.cursor()
+        cur.execute(pg_query, p)
+        row = cur.fetchone()
+        return row[0] if row else None
+    else:
+        cur = db.execute(query, p)
+        return cur.lastrowid
+
+def sql_commit():
+    get_db().commit()
+
+def db_row_to_dict(row):
+    """将数据库行转换为字典（兼容 SQLite Row 和 psycopg2 RealDictRow）"""
+    if row is None:
+        return None
+    return dict(row)
+
+def log_audit(table_name, record_id, record_name, action, changes, modified_by='admin'):
+    """记录审计日志"""
+    now = datetime.now()
+    sql("""INSERT INTO audit_log (table_name, record_id, record_name, action, changes, modified_by, modified_date, modified_time)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
         (table_name, record_id, record_name, action, json.dumps(changes, ensure_ascii=False),
-         modified_by, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S'))
-    )
-    db.commit()
+         modified_by, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
+    sql_commit()
 
 # ============================================================
 # 页面路由
@@ -177,14 +387,13 @@ def index():
 @app.route('/api/schools', methods=['GET'])
 def get_schools():
     """获取所有学校列表（含课程数量统计）"""
-    db = get_db()
-    schools = db.execute("""
+    schools = sql_all("""
         SELECT s.*,
                (SELECT COUNT(*) FROM courses c WHERE c.school_id = s.id AND c.teaching_mode = '授课式') as taught_count,
                (SELECT COUNT(*) FROM courses c WHERE c.school_id = s.id AND c.teaching_mode = '研究式') as research_count
         FROM schools s
         ORDER BY s.id
-    """).fetchall()
+    """)
     result = []
     for s in schools:
         result.append({
@@ -195,43 +404,40 @@ def get_schools():
             'website': s['website'],
             'taught_count': s['taught_count'],
             'research_count': s['research_count'],
-            'created_at': s['created_at'],
+            'created_at': str(s['created_at']),
         })
     return jsonify(result)
 
 @app.route('/api/schools/<int:school_id>', methods=['GET'])
 def get_school(school_id):
-    db = get_db()
-    school = db.execute("SELECT * FROM schools WHERE id = ?", (school_id,)).fetchone()
+    school = sql_one("SELECT * FROM schools WHERE id = ?", (school_id,))
     if not school:
         return jsonify({'error': '学校不存在'}), 404
-    return jsonify(dict(school))
+    school['created_at'] = str(school['created_at'])
+    return jsonify(school)
 
 @app.route('/api/schools', methods=['POST'])
 def add_school():
     """添加学校"""
     data = request.json
-    db = get_db()
     try:
-        cursor = db.execute(
+        school_id = sql_insert(
             "INSERT INTO schools (name_cn, abbreviation, name_en, website) VALUES (?, ?, ?, ?)",
             (data['name_cn'], data['abbreviation'], data['name_en'], data.get('website', ''))
         )
-        db.commit()
-        school_id = cursor.lastrowid
+        sql_commit()
         log_audit('schools', school_id, data['name_cn'], 'CREATE',
                   {'name_cn': data['name_cn'], 'abbreviation': data['abbreviation'],
                    'name_en': data['name_en'], 'website': data.get('website', '')})
         return jsonify({'id': school_id, 'message': '学校添加成功'}), 201
-    except sqlite3.IntegrityError:
-        return jsonify({'error': '学校简称已存在'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/api/schools/<int:school_id>', methods=['PUT'])
 def update_school(school_id):
     """修改学校"""
     data = request.json
-    db = get_db()
-    old = db.execute("SELECT * FROM schools WHERE id = ?", (school_id,)).fetchone()
+    old = sql_one("SELECT * FROM schools WHERE id = ?", (school_id,))
     if not old:
         return jsonify({'error': '学校不存在'}), 404
 
@@ -240,42 +446,124 @@ def update_school(school_id):
         if field in data and str(data[field]) != str(old[field]):
             changes[field] = {'old': old[field], 'new': data[field]}
 
-    db.execute(
-        "UPDATE schools SET name_cn=?, abbreviation=?, name_en=?, website=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+    sql("UPDATE schools SET name_cn=?, abbreviation=?, name_en=?, website=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
         (data.get('name_cn', old['name_cn']),
          data.get('abbreviation', old['abbreviation']),
          data.get('name_en', old['name_en']),
          data.get('website', old['website']),
-         school_id)
-    )
-    db.commit()
+         school_id))
+    sql_commit()
     log_audit('schools', school_id, old['name_cn'], 'UPDATE', changes, data.get('modified_by', 'admin'))
     return jsonify({'message': '学校修改成功'})
 
 @app.route('/api/schools/<int:school_id>', methods=['DELETE'])
 def delete_school(school_id):
     """删除学校"""
-    db = get_db()
-    old = db.execute("SELECT * FROM schools WHERE id = ?", (school_id,)).fetchone()
+    old = sql_one("SELECT * FROM schools WHERE id = ?", (school_id,))
     if not old:
         return jsonify({'error': '学校不存在'}), 404
 
-    # 记录删除前的数据
-    old_data = dict(old)
-    db.execute("DELETE FROM schools WHERE id = ?", (school_id,))
-    db.commit()
-    log_audit('schools', school_id, old_data['name_cn'], 'DELETE', old_data)
+    sql("DELETE FROM schools WHERE id = ?", (school_id,))
+    sql_commit()
+    log_audit('schools', school_id, old['name_cn'], 'DELETE', old)
     return jsonify({'message': '学校删除成功'})
 
 # ============================================================
 # 课程 API
 # ============================================================
 
+def format_course(c):
+    """格式化课程数据（含展示字段）"""
+    # 格式化修读时间
+    study_mode = c.get('study_mode', '')
+    ft = c.get('study_duration_ft')
+    pt = c.get('study_duration_pt')
+    if study_mode in ('全日制/兼读制', '全日制/非全日制'):
+        ft_str = f"{ft}年" if ft else '-'
+        pt_str = f"{pt}年" if pt else '-'
+        study_duration = f"{ft_str}<br>{pt_str}"
+    elif study_mode == '全日制':
+        study_duration = f"{ft}年" if ft else '-'
+    else:
+        study_duration = f"{pt}年" if pt else '-'
+
+    # 格式化学费
+    tl_val = c.get('tuition_local') or 0
+    tn_val = c.get('tuition_non_local') or 0
+    tl = f"HKD{int(tl_val):,}" if tl_val else None
+    tn = f"HKD{int(tn_val):,}" if tn_val else None
+    if tl and tn and tl != tn:
+        tuition = f"{tl}（本地生）<br>{tn}（非本地生）"
+    elif tl:
+        tuition = tl
+    elif tn:
+        tuition = tn
+    else:
+        tuition = '—'
+
+    # 格式化截止日期
+    dl = c.get('deadline_local') or ''
+    dn = c.get('deadline_non_local') or ''
+    if dl and dn and dl != dn:
+        deadline = f"{dl}（本地生）<br>{dn}（非本地生）"
+    elif dl:
+        deadline = f"{dl}（本地生）"
+    elif dn:
+        deadline = f"{dn}（非本地生）"
+    else:
+        deadline = '—'
+
+    return {
+        'id': c['id'],
+        'course_code': c['course_code'],
+        'school_id': c['school_id'],
+        'school_abbr': c.get('school_abbr', ''),
+        'school_name_cn': c.get('school_name_cn', ''),
+        'school_name_en': c.get('school_name_en', ''),
+        'subject_category': c['subject_category'],
+        'course_name_cn': c['course_name_cn'],
+        'course_name_en': c.get('course_name_en', ''),
+        'teaching_mode': c['teaching_mode'],
+        'study_mode': study_mode,
+        'study_duration_ft': ft,
+        'study_duration_pt': pt,
+        'study_duration_display': study_duration,
+        'teaching_language': c['teaching_language'],
+        'academic_year': c['academic_year'],
+        'student_identity': c['student_identity'],
+        'tuition_local': tl_val,
+        'tuition_non_local': tn_val,
+        'tuition_display': tuition,
+        'deadline_local': dl,
+        'deadline_non_local': dn,
+        'deadline_display': deadline,
+        'qf_level': c.get('qf_level', ''),
+        'qr_number': c.get('qr_number', ''),
+        'education_requirement': c.get('education_requirement', ''),
+        'chinese_exempt': bool(c.get('chinese_exempt')),
+        'chinese_dse': c.get('chinese_dse', ''),
+        'chinese_gaokao': c.get('chinese_gaokao', ''),
+        'chinese_hsk': c.get('chinese_hsk', ''),
+        'chinese_other': c.get('chinese_other', ''),
+        'english_exempt': bool(c.get('english_exempt')),
+        'english_dse': c.get('english_dse', ''),
+        'english_gaokao': c.get('english_gaokao', ''),
+        'english_toefl_pbt': c.get('english_toefl_pbt', ''),
+        'english_toefl_ibt': c.get('english_toefl_ibt', ''),
+        'english_ielts': c.get('english_ielts', ''),
+        'english_cet4': c.get('english_cet4', ''),
+        'english_other': c.get('english_other', ''),
+        'other_requirements': c.get('other_requirements', ''),
+        'interview_required': bool(c.get('interview_required')),
+        'course_description': c.get('course_description', ''),
+        'course_page_url': c.get('course_page_url', ''),
+        'course_brochure_url': c.get('course_brochure_url', ''),
+        'created_at': str(c.get('created_at', '')),
+    }
+
 @app.route('/api/courses', methods=['GET'])
 def get_courses():
     """获取课程列表（支持多维度筛选）"""
-    db = get_db()
-
     query = """
         SELECT c.*, s.abbreviation as school_abbr, s.name_cn as school_name_cn, s.name_en as school_name_en
         FROM courses c
@@ -284,7 +572,6 @@ def get_courses():
     """
     params = []
 
-    # 筛选维度
     if request.args.get('course_code'):
         query += " AND c.course_code LIKE ?"
         params.append(f"%{request.args['course_code']}%")
@@ -333,139 +620,58 @@ def get_courses():
         tmax = float(request.args['tuition_max'])
         params.extend([tmax, tmax])
 
-    # 截止日期排序
     if request.args.get('deadline_sort'):
         if request.args['deadline_sort'] == 'asc':
-            query += " ORDER BY CASE WHEN c.deadline_non_local = '' THEN '9999-99-99' ELSE c.deadline_non_local END ASC"
+            if USE_PG:
+                query += " ORDER BY NULLIF(c.deadline_non_local, '') ASC NULLS LAST"
+            else:
+                query += " ORDER BY CASE WHEN c.deadline_non_local = '' THEN '9999-99-99' ELSE c.deadline_non_local END ASC"
         elif request.args['deadline_sort'] == 'desc':
-            query += " ORDER BY CASE WHEN c.deadline_non_local = '' THEN '0000-00-00' ELSE c.deadline_non_local END DESC"
+            if USE_PG:
+                query += " ORDER BY NULLIF(c.deadline_non_local, '') DESC NULLS LAST"
+            else:
+                query += " ORDER BY CASE WHEN c.deadline_non_local = '' THEN '0000-00-00' ELSE c.deadline_non_local END DESC"
     else:
         query += " ORDER BY c.id DESC"
 
-    cursor = db.execute(query, params)
-    courses = cursor.fetchall()
-
-    result = []
-    for c in courses:
-        # 格式化修读时间
-        study_duration = '-'
-        if c['study_mode'] == '全日制/非全日制':
-            ft = f"{c['study_duration_ft']}年" if c['study_duration_ft'] else '-'
-            pt = f"{c['study_duration_pt']}年" if c['study_duration_pt'] else '-'
-            study_duration = f"{ft}/{pt}"
-        elif c['study_mode'] == '全日制':
-            study_duration = f"{c['study_duration_ft']}年" if c['study_duration_ft'] else '-'
-        else:
-            study_duration = f"{c['study_duration_pt']}年" if c['study_duration_pt'] else '-'
-
-        # 格式化学费（本地生与非本地生不同时分行显示）
-        tl = f"HKD{int(c['tuition_local']):,}" if c['tuition_local'] else None
-        tn = f"HKD{int(c['tuition_non_local']):,}" if c['tuition_non_local'] else None
-        if tl and tn and tl != tn:
-            tuition = f"{tl}（本地生）<br>{tn}（非本地生）"
-        elif tl:
-            tuition = f"{tl}（本地生）"
-        elif tn:
-            tuition = f"{tn}（非本地生）"
-        else:
-            tuition = '—'
-
-        # 格式化截止日期（不同时分行显示）
-        dl = c['deadline_local'] if c['deadline_local'] else None
-        dn = c['deadline_non_local'] if c['deadline_non_local'] else None
-        if dl and dn and dl != dn:
-            deadline = f"{dl}（本地生）<br>{dn}（非本地生）"
-        elif dl:
-            deadline = f"{dl}（本地生）"
-        elif dn:
-            deadline = f"{dn}（非本地生）"
-        else:
-            deadline = '—'
-
-        result.append({
-            'id': c['id'],
-            'course_code': c['course_code'],
-            'school_id': c['school_id'],
-            'school_abbr': c['school_abbr'],
-            'school_name_cn': c['school_name_cn'],
-            'school_name_en': c['school_name_en'],
-            'subject_category': c['subject_category'],
-            'course_name_cn': c['course_name_cn'],
-            'course_name_en': c['course_name_en'],
-            'teaching_mode': c['teaching_mode'],
-            'study_mode': c['study_mode'],
-            'study_duration_ft': c['study_duration_ft'],
-            'study_duration_pt': c['study_duration_pt'],
-            'study_duration_display': study_duration,
-            'teaching_language': c['teaching_language'],
-            'academic_year': c['academic_year'],
-            'student_identity': c['student_identity'],
-            'tuition_local': c['tuition_local'],
-            'tuition_non_local': c['tuition_non_local'],
-            'tuition_display': tuition,
-            'deadline_local': c['deadline_local'],
-            'deadline_non_local': c['deadline_non_local'],
-            'deadline_display': deadline,
-            'qf_level': c['qf_level'],
-            'qr_number': c['qr_number'],
-            'education_requirement': c['education_requirement'],
-            'chinese_exempt': bool(c['chinese_exempt']),
-            'chinese_dse': c['chinese_dse'],
-            'chinese_gaokao': c['chinese_gaokao'],
-            'chinese_hsk': c['chinese_hsk'],
-            'chinese_other': c['chinese_other'],
-            'english_exempt': bool(c['english_exempt']),
-            'english_dse': c['english_dse'],
-            'english_gaokao': c['english_gaokao'],
-            'english_toefl_pbt': c['english_toefl_pbt'],
-            'english_toefl_ibt': c['english_toefl_ibt'],
-            'english_ielts': c['english_ielts'],
-            'english_cet4': c['english_cet4'],
-            'english_other': c['english_other'],
-            'other_requirements': c['other_requirements'],
-            'interview_required': bool(c['interview_required']),
-            'course_description': c['course_description'],
-            'course_page_url': c['course_page_url'],
-            'course_brochure_url': c['course_brochure_url'],
-            'created_at': c['created_at'],
-        })
-    return jsonify(result)
+    courses = sql_all(query, params)
+    return jsonify([format_course(c) for c in courses])
 
 @app.route('/api/courses/<int:course_id>', methods=['GET'])
 def get_course(course_id):
     """获取单个课程详情"""
-    db = get_db()
-    course = db.execute("""
+    course = sql_one("""
         SELECT c.*, s.abbreviation as school_abbr, s.name_cn as school_name_cn,
                s.name_en as school_name_en, s.website as school_website
         FROM courses c
         JOIN schools s ON c.school_id = s.id
         WHERE c.id = ?
-    """, (course_id,)).fetchone()
+    """, (course_id,))
     if not course:
         return jsonify({'error': '课程不存在'}), 404
-    result = dict(course)
-    result['chinese_exempt'] = bool(result['chinese_exempt'])
-    result['english_exempt'] = bool(result['english_exempt'])
-    result['interview_required'] = bool(result['interview_required'])
-    return jsonify(result)
+    course['chinese_exempt'] = bool(course['chinese_exempt'])
+    course['english_exempt'] = bool(course['english_exempt'])
+    course['interview_required'] = bool(course['interview_required'])
+    course['created_at'] = str(course.get('created_at', ''))
+    return jsonify(course)
 
 @app.route('/api/courses', methods=['POST'])
 def add_course():
     """添加课程"""
     data = request.json
-    db = get_db()
 
-    # 自动生成课程编号
-    last = db.execute("SELECT course_code FROM courses ORDER BY id DESC LIMIT 1").fetchone()
-    if last:
-        last_num = int(last['course_code'].replace('HK-', ''))
+    last = sql_one("SELECT course_code FROM courses ORDER BY id DESC LIMIT 1")
+    if last and last.get('course_code'):
+        try:
+            last_num = int(last['course_code'].replace('HK-', ''))
+        except ValueError:
+            last_num = 0
         new_code = f"HK-{last_num + 1:04d}"
     else:
         new_code = "HK-0001"
 
     try:
-        cursor = db.execute("""
+        course_id = sql_insert("""
             INSERT INTO courses (
                 course_code, school_id, subject_category, course_name_cn, course_name_en,
                 teaching_mode, study_mode, study_duration_ft, study_duration_pt,
@@ -477,7 +683,7 @@ def add_course():
                 english_toefl_ibt, english_ielts, english_cet4, english_other,
                 other_requirements, interview_required,
                 course_description, course_page_url, course_brochure_url
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             new_code,
             data['school_id'], data['subject_category'], data['course_name_cn'], data.get('course_name_en', ''),
@@ -498,10 +704,7 @@ def add_course():
             1 if data.get('interview_required') else 0,
             data.get('course_description', ''), data.get('course_page_url', ''), data.get('course_brochure_url', '')
         ))
-        db.commit()
-        course_id = cursor.lastrowid
-
-        # 审计日志
+        sql_commit()
         changes = {k: v for k, v in data.items() if v}
         changes['course_code'] = new_code
         log_audit('courses', course_id, f"{data['course_name_cn']} ({new_code})", 'CREATE', changes,
@@ -520,12 +723,10 @@ def batch_sync_courses():
     if not courses:
         return jsonify({'error': '没有课程数据'}), 400
 
-    db = get_db()
     results = {'success': 0, 'skipped': 0, 'failed': 0, 'errors': []}
 
-    # 获取当前最大课程编号
-    last_code_row = db.execute("SELECT course_code FROM courses ORDER BY id DESC LIMIT 1").fetchone()
-    if last_code_row and last_code_row['course_code']:
+    last_code_row = sql_one("SELECT course_code FROM courses ORDER BY id DESC LIMIT 1")
+    if last_code_row and last_code_row.get('course_code'):
         try:
             last_num = int(last_code_row['course_code'].replace('HK-', ''))
         except ValueError:
@@ -535,35 +736,29 @@ def batch_sync_courses():
 
     for idx, course in enumerate(courses):
         try:
-            # school_id 转为整数
             school_id = int(course.get('school_id', 0))
             if not school_id:
                 results['failed'] += 1
                 results['errors'].append(f"第{idx+1}行: 缺少 school_id")
                 continue
 
-            # 验证学校是否存在
-            school = db.execute("SELECT id FROM schools WHERE id = ?", (school_id,)).fetchone()
+            school = sql_one("SELECT id FROM schools WHERE id = ?", (school_id,))
             if not school:
                 results['failed'] += 1
                 results['errors'].append(f"第{idx+1}行: school_id={school_id} 不存在")
                 continue
 
-            # 检查课程是否已存在（通过名称+学校匹配）
-            existing = db.execute(
+            existing = sql_one(
                 "SELECT id FROM courses WHERE course_name_cn = ? AND school_id = ?",
                 (course.get('course_name_cn', ''), school_id)
-            ).fetchone()
-
+            )
             if existing:
                 results['skipped'] += 1
                 continue
 
-            # 生成新编号
             last_num += 1
             new_code = f"HK-{last_num:04d}"
 
-            # 插入课程（确保类型正确）
             def get_str(field):
                 v = course.get(field, '')
                 return str(v) if v is not None else ''
@@ -573,7 +768,7 @@ def batch_sync_courses():
                 if v is None or v == '':
                     return 0
                 try:
-                    return float(v)
+                    return float(str(v).replace(',', ''))
                 except (ValueError, TypeError):
                     return 0
 
@@ -582,7 +777,7 @@ def batch_sync_courses():
                 if v is None or v == '':
                     return None
                 try:
-                    return float(v)
+                    return float(str(v).replace(',', ''))
                 except (ValueError, TypeError):
                     return None
 
@@ -596,7 +791,7 @@ def batch_sync_courses():
                     return 1 if v.lower() in ('1', 'true', 'yes', '是') else 0
                 return 0
 
-            db.execute("""
+            course_id = sql_insert("""
                 INSERT INTO courses (
                     course_code, school_id, subject_category, course_name_cn, course_name_en,
                     teaching_mode, study_mode, study_duration_ft, study_duration_pt,
@@ -626,8 +821,8 @@ def batch_sync_courses():
                 get_str('other_requirements'), get_bool('interview_required'),
                 get_str('course_description'), get_str('course_page_url'), get_str('course_brochure_url')
             ))
+            sql_commit()
 
-            course_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
             log_audit('courses', course_id,
                       f"{course.get('course_name_cn', '')} ({new_code})",
                       'BATCH_SYNC',
@@ -639,7 +834,6 @@ def batch_sync_courses():
             results['failed'] += 1
             results['errors'].append(f"第{idx+1}行: {str(e)}")
 
-    db.commit()
     results['message'] = f"同步完成：成功 {results['success']} 条，跳过 {results['skipped']} 条，失败 {results['failed']} 条"
     return jsonify(results), 200
 
@@ -648,51 +842,41 @@ def batch_sync_courses():
 def update_course(course_id):
     """修改课程"""
     data = request.json
-    db = get_db()
-    old = db.execute("SELECT * FROM courses WHERE id = ?", (course_id,)).fetchone()
+    old = sql_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     if not old:
         return jsonify({'error': '课程不存在'}), 404
 
-    # 对比变更
     field_map = {
-        'school_id': 'school_id', 'subject_category': 'subject_category',
-        'course_name_cn': 'course_name_cn', 'course_name_en': 'course_name_en',
-        'teaching_mode': 'teaching_mode', 'study_mode': 'study_mode',
-        'study_duration_ft': 'study_duration_ft', 'study_duration_pt': 'study_duration_pt',
-        'teaching_language': 'teaching_language', 'academic_year': 'academic_year',
-        'student_identity': 'student_identity',
-        'tuition_local': 'tuition_local', 'tuition_non_local': 'tuition_non_local',
-        'deadline_local': 'deadline_local', 'deadline_non_local': 'deadline_non_local',
-        'qf_level': 'qf_level', 'qr_number': 'qr_number',
-        'education_requirement': 'education_requirement',
-        'chinese_dse': 'chinese_dse', 'chinese_gaokao': 'chinese_gaokao',
-        'chinese_hsk': 'chinese_hsk', 'chinese_other': 'chinese_other',
-        'english_dse': 'english_dse', 'english_gaokao': 'english_gaokao',
-        'english_toefl_pbt': 'english_toefl_pbt', 'english_toefl_ibt': 'english_toefl_ibt',
-        'english_ielts': 'english_ielts', 'english_cet4': 'english_cet4',
-        'english_other': 'english_other', 'other_requirements': 'other_requirements',
-        'course_description': 'course_description', 'course_page_url': 'course_page_url',
-        'course_brochure_url': 'course_brochure_url',
+        'school_id', 'subject_category', 'course_name_cn', 'course_name_en',
+        'teaching_mode', 'study_mode', 'study_duration_ft', 'study_duration_pt',
+        'teaching_language', 'academic_year', 'student_identity',
+        'tuition_local', 'tuition_non_local', 'deadline_local', 'deadline_non_local',
+        'qf_level', 'qr_number', 'education_requirement',
+        'chinese_dse', 'chinese_gaokao', 'chinese_hsk', 'chinese_other',
+        'english_dse', 'english_gaokao', 'english_toefl_pbt', 'english_toefl_ibt',
+        'english_ielts', 'english_cet4', 'english_other', 'other_requirements',
+        'course_description', 'course_page_url', 'course_brochure_url',
     }
 
     changes = {}
-    for key, db_col in field_map.items():
+    for key in field_map:
         if key in data:
-            old_val = str(old[db_col]) if old[db_col] is not None else ''
+            old_val = str(old[key]) if old[key] is not None else ''
             new_val = str(data[key]) if data[key] is not None else ''
             if old_val != new_val:
-                changes[key] = {'old': old[db_col], 'new': data[key]}
+                changes[key] = {'old': old[key], 'new': data[key]}
 
-    # Boolean fields
-    for bool_field, db_col in [('chinese_exempt', 'chinese_exempt'), ('english_exempt', 'english_exempt'),
-                                 ('interview_required', 'interview_required')]:
+    for bool_field in ['chinese_exempt', 'english_exempt', 'interview_required']:
         if bool_field in data:
-            old_val = bool(old[db_col])
+            old_val = bool(old[bool_field])
             new_val = bool(data[bool_field])
             if old_val != new_val:
                 changes[bool_field] = {'old': old_val, 'new': new_val}
 
-    db.execute("""
+    def gv(field):
+        return data.get(field, old[field])
+
+    sql("""
         UPDATE courses SET
             school_id=?, subject_category=?, course_name_cn=?, course_name_en=?,
             teaching_mode=?, study_mode=?, study_duration_ft=?, study_duration_pt=?,
@@ -707,45 +891,21 @@ def update_course(course_id):
             updated_at=CURRENT_TIMESTAMP
         WHERE id=?
     """, (
-        data.get('school_id', old['school_id']),
-        data.get('subject_category', old['subject_category']),
-        data.get('course_name_cn', old['course_name_cn']),
-        data.get('course_name_en', old['course_name_en']),
-        data.get('teaching_mode', old['teaching_mode']),
-        data.get('study_mode', old['study_mode']),
-        data.get('study_duration_ft', old['study_duration_ft']),
-        data.get('study_duration_pt', old['study_duration_pt']),
-        data.get('teaching_language', old['teaching_language']),
-        data.get('academic_year', old['academic_year']),
-        data.get('student_identity', old['student_identity']),
-        data.get('tuition_local', old['tuition_local']),
-        data.get('tuition_non_local', old['tuition_non_local']),
-        data.get('deadline_local', old['deadline_local']),
-        data.get('deadline_non_local', old['deadline_non_local']),
-        data.get('qf_level', old['qf_level']),
-        data.get('qr_number', old['qr_number']),
-        data.get('education_requirement', old['education_requirement']),
-        1 if data.get('chinese_exempt') else 0,
-        data.get('chinese_dse', old['chinese_dse']),
-        data.get('chinese_gaokao', old['chinese_gaokao']),
-        data.get('chinese_hsk', old['chinese_hsk']),
-        data.get('chinese_other', old['chinese_other']),
-        1 if data.get('english_exempt') else 0,
-        data.get('english_dse', old['english_dse']),
-        data.get('english_gaokao', old['english_gaokao']),
-        data.get('english_toefl_pbt', old['english_toefl_pbt']),
-        data.get('english_toefl_ibt', old['english_toefl_ibt']),
-        data.get('english_ielts', old['english_ielts']),
-        data.get('english_cet4', old['english_cet4']),
-        data.get('english_other', old['english_other']),
-        data.get('other_requirements', old['other_requirements']),
-        1 if data.get('interview_required') else 0,
-        data.get('course_description', old['course_description']),
-        data.get('course_page_url', old['course_page_url']),
-        data.get('course_brochure_url', old['course_brochure_url']),
+        gv('school_id'), gv('subject_category'), gv('course_name_cn'), gv('course_name_en'),
+        gv('teaching_mode'), gv('study_mode'), gv('study_duration_ft'), gv('study_duration_pt'),
+        gv('teaching_language'), gv('academic_year'), gv('student_identity'),
+        gv('tuition_local'), gv('tuition_non_local'), gv('deadline_local'), gv('deadline_non_local'),
+        gv('qf_level'), gv('qr_number'), gv('education_requirement'),
+        1 if data.get('chinese_exempt', old['chinese_exempt']) else 0,
+        gv('chinese_dse'), gv('chinese_gaokao'), gv('chinese_hsk'), gv('chinese_other'),
+        1 if data.get('english_exempt', old['english_exempt']) else 0,
+        gv('english_dse'), gv('english_gaokao'), gv('english_toefl_pbt'),
+        gv('english_toefl_ibt'), gv('english_ielts'), gv('english_cet4'), gv('english_other'),
+        gv('other_requirements'), 1 if data.get('interview_required', old['interview_required']) else 0,
+        gv('course_description'), gv('course_page_url'), gv('course_brochure_url'),
         course_id
     ))
-    db.commit()
+    sql_commit()
     log_audit('courses', course_id, f"{old['course_name_cn']} ({old['course_code']})", 'UPDATE', changes,
               data.get('modified_by', 'admin'))
     return jsonify({'message': '课程修改成功'})
@@ -753,15 +913,13 @@ def update_course(course_id):
 @app.route('/api/courses/<int:course_id>', methods=['DELETE'])
 def delete_course(course_id):
     """删除课程"""
-    db = get_db()
-    old = db.execute("SELECT * FROM courses WHERE id = ?", (course_id,)).fetchone()
+    old = sql_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     if not old:
         return jsonify({'error': '课程不存在'}), 404
 
-    old_data = dict(old)
-    db.execute("DELETE FROM courses WHERE id = ?", (course_id,))
-    db.commit()
-    log_audit('courses', course_id, f"{old_data['course_name_cn']} ({old_data['course_code']})", 'DELETE', old_data)
+    sql("DELETE FROM courses WHERE id = ?", (course_id,))
+    sql_commit()
+    log_audit('courses', course_id, f"{old['course_name_cn']} ({old['course_code']})", 'DELETE', old)
     return jsonify({'message': '课程删除成功'})
 
 # ============================================================
@@ -771,7 +929,6 @@ def delete_course(course_id):
 @app.route('/api/audit-log', methods=['GET'])
 def get_audit_log():
     """获取审计日志"""
-    db = get_db()
     limit = request.args.get('limit', 100, type=int)
     table = request.args.get('table', '')
     query = "SELECT * FROM audit_log"
@@ -781,7 +938,7 @@ def get_audit_log():
         params.append(table)
     query += " ORDER BY created_at DESC LIMIT ?"
     params.append(limit)
-    logs = db.execute(query, params).fetchall()
+    logs = sql_all(query, params)
     result = []
     for log in logs:
         result.append({
@@ -812,6 +969,7 @@ if __name__ == '__main__':
     host = os.environ.get('HOST', '0.0.0.0')
     print("=" * 60)
     print("  香港留学课程检索系统 - HK Course Finder")
+    print(f"  数据库模式: {'PostgreSQL' if USE_PG else 'SQLite'}")
     print(f"  访问地址: http://{host}:{port}")
     print("=" * 60)
     app.run(host=host, port=port, debug=False)
