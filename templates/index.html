@@ -170,6 +170,7 @@
         [data-degree="学士"] { background: #e3f2fd; color: #1565c0; font-weight: 600; }
         [data-degree="硕士"] { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
         [data-degree="博士"] { background: #fce4ec; color: #ad1457; font-weight: 600; }
+        .tag { display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0; border-radius: 4px; font-size: 12px; background: #f0f0f5; color: #555; white-space: nowrap; }
         /* Filter Bar */
         .filter-bar {
             display: flex; flex-wrap: wrap; gap: 12px;
@@ -1406,6 +1407,7 @@ async function viewCourseDetail(id) {
                 <div class="detail-item"><div class="detail-label">学位</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
                 <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.student_identity}</div></div>
                 <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language}</div></div>
+                <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${c.teaching_format || '—'}</div></div>
                 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level || '-'}</div></div>
                 <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number || '-'}</div></div>
                 <div class="detail-item detail-full"><div class="detail-label">学费（港币）</div><div class="detail-value">${tuitionLocal}（本地生）/ ${tuitionNonLocal}（非本地生）</div></div>
@@ -1416,36 +1418,24 @@ async function viewCourseDetail(id) {
             <div class="detail-section"><h4>📝 报读要求</h4></div>
             <div class="detail-grid">
                 <div class="detail-item detail-full"><div class="detail-label">学历要求</div><div class="detail-value">${c.education_requirement || '-'}</div></div>
-            </div>
-            <div class="detail-grid" style="margin-top:8px;">
-                <div class="detail-item"><div class="detail-label"><strong>是否要求中文</strong></div><div class="detail-value">${c.chinese_req ? '✅ 是' : '❌ 否'}</div></div>
-                <div class="detail-item"><div class="detail-label"><strong>是否要求英文</strong></div><div class="detail-value">${c.english_req ? '✅ 是' : '❌ 否'}</div></div>
-            </div>
-            <div class="detail-grid" style="margin-top:8px;">
-                <div class="detail-item"><div class="detail-label"><strong>中文要求详情</strong></div>
-                    <div class="detail-value" style="font-size:13px;">
-                        ${c.chinese_exempt ? '✅ 持有以中文授课的认可学位免试：<strong>适用</strong><br>' : '❌ 持有以中文授课的认可学位免试：<strong>不适用</strong><br>'}
-                        ${c.chinese_dse ? '② DSE：' + c.chinese_dse + '级<br>' : ''}
-                        ${c.chinese_gaokao ? '③ 高考：' + c.chinese_gaokao + '分<br>' : ''}
-                        ${c.chinese_hsk ? '④ HSK：' + c.chinese_hsk + '级<br>' : ''}
-                        ${c.chinese_other ? '⑤ 其他：' + c.chinese_other : ''}
-                        ${!c.chinese_dse && !c.chinese_gaokao && !c.chinese_hsk && !c.chinese_other ? '（未设置）' : ''}
-                    </div>
-                </div>
-                <div class="detail-item"><div class="detail-label"><strong>英文要求详情</strong></div>
-                    <div class="detail-value" style="font-size:13px;">
-                        ${c.english_exempt ? '✅ 持有以英文授课的认可学位免试：<strong>适用</strong><br>' : '❌ 持有以英文授课的认可学位免试：<strong>不适用</strong><br>'}
-                        ${c.english_dse ? '② DSE：' + c.english_dse + '级<br>' : ''}
-                        ${c.english_gaokao ? '③ 高考：' + c.english_gaokao + '分<br>' : ''}
-                        ${c.english_toefl_pbt ? '④ TOEFL笔考：' + c.english_toefl_pbt + '分<br>' : ''}
-                        ${c.english_toefl_ibt ? '④ TOEFL网考：' + c.english_toefl_ibt + '分<br>' : ''}
-                        ${c.english_ielts ? '⑤ IELTS：' + c.english_ielts + '分<br>' : ''}
-                        ${c.english_cet4 ? '⑥ CET-4：' + c.english_cet4 + '分<br>' : ''}
-                        ${c.english_cet6 ? '⑦ CET-6：' + c.english_cet6 + '分<br>' : ''}
-                        ${c.english_other ? '⑧ 其他：' + c.english_other : ''}
-                        ${!c.english_dse && !c.english_gaokao && !c.english_toefl_pbt && !c.english_toefl_ibt && !c.english_ielts && !c.english_cet4 && !c.english_cet6 && !c.english_other ? '（未设置）' : ''}
-                    </div>
-                </div>
+                <div class="detail-item"><div class="detail-label">中文要求</div><div class="detail-value">${c.chinese_req ? '✅ 需要' : '❌ 不需要'}${c.chinese_exempt ? '（可免试）' : ''}</div></div>
+                <div class="detail-item"><div class="detail-label">英文要求</div><div class="detail-value">${c.english_req ? '✅ 需要' : '❌ 不需要'}${c.english_exempt ? '（可免试）' : ''}</div></div>
+                ${(c.chinese_req && (c.chinese_dse || c.chinese_gaokao || c.chinese_hsk || c.chinese_other)) ? `<div class="detail-item detail-full"><div class="detail-label">中文考试要求</div><div class="detail-value">
+                    ${c.chinese_dse ? '<span class="tag">DSE ' + c.chinese_dse + '级</span>' : ''}
+                    ${c.chinese_gaokao ? '<span class="tag">高考 ' + c.chinese_gaokao + '分</span>' : ''}
+                    ${c.chinese_hsk ? '<span class="tag">HSK ' + c.chinese_hsk + '级</span>' : ''}
+                    ${c.chinese_other ? '<span class="tag">' + c.chinese_other + '</span>' : ''}
+                </div></div>` : ''}
+                ${(c.english_req && (c.english_dse || c.english_gaokao || c.english_toefl_pbt || c.english_toefl_ibt || c.english_ielts || c.english_cet4 || c.english_cet6 || c.english_other)) ? `<div class="detail-item detail-full"><div class="detail-label">英文考试要求</div><div class="detail-value">
+                    ${c.english_dse ? '<span class="tag">DSE ' + c.english_dse + '级</span>' : ''}
+                    ${c.english_gaokao ? '<span class="tag">高考 ' + c.english_gaokao + '分</span>' : ''}
+                    ${c.english_toefl_pbt ? '<span class="tag">TOEFL笔考 ' + c.english_toefl_pbt + '分</span>' : ''}
+                    ${c.english_toefl_ibt ? '<span class="tag">TOEFL网考 ' + c.english_toefl_ibt + '分</span>' : ''}
+                    ${c.english_ielts ? '<span class="tag">IELTS ' + c.english_ielts + '分</span>' : ''}
+                    ${c.english_cet4 ? '<span class="tag">CET-4 ' + c.english_cet4 + '分</span>' : ''}
+                    ${c.english_cet6 ? '<span class="tag">CET-6 ' + c.english_cet6 + '分</span>' : ''}
+                    ${c.english_other ? '<span class="tag">' + c.english_other + '</span>' : ''}
+                </div></div>` : ''}
                 <div class="detail-item"><div class="detail-label">其他要求</div><div class="detail-value">${c.other_requirements || '-'}</div></div>
                 <div class="detail-item"><div class="detail-label">面试要求</div><div class="detail-value">${c.interview_required ? '✅ 需要' : '❌ 不需要'}</div></div>
             </div>
@@ -1454,11 +1444,11 @@ async function viewCourseDetail(id) {
             <div class="detail-section"><h4>📖 课程细节</h4></div>
             <div class="detail-grid">
                 <div class="detail-item detail-full"><div class="detail-label">课程介绍</div><div class="detail-value">${c.course_description || '（暂无介绍）'}</div></div>
-                <div class="detail-item"><div class="detail-label">课程主页</div><div class="detail-value">${c.course_page_url ? `<a href="${c.course_page_url}" target="_blank" class="clickable">🔗 ${c.course_page_url}</a>` : '-'}</div></div>
-                <div class="detail-item"><div class="detail-label">课程简章</div><div class="detail-value">${c.course_brochure_url ? `<a href="${c.course_brochure_url}" target="_blank" class="clickable">🔗 ${c.course_brochure_url}</a>` : '-'}</div></div>
+                <div class="detail-item"><div class="detail-label">课程主页</div><div class="detail-value">${c.course_page_url ? `<a href="${c.course_page_url}" target="_blank" class="clickable">🔗 链接</a>` : '-'}</div></div>
+                <div class="detail-item"><div class="detail-label">课程简章</div><div class="detail-value">${c.course_brochure_url ? `<a href="${c.course_brochure_url}" target="_blank" class="clickable">🔗 链接</a>` : '-'}</div></div>
                 <div class="detail-item detail-full"><div class="detail-label">学校官网</div><div class="detail-value">${c.school_website ? `<a href="${c.school_website}" target="_blank" class="clickable">🔗 ${c.school_website}</a>` : '-'}</div></div>
             </div>
-            ${isAdmin() ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+            ${isAdmin() ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
                 <button class="btn btn-outline" onclick="closeDetailModal();editCourse(${c.id})">✏️ 编辑</button>
                 <button class="btn btn-danger" onclick="closeDetailModal();deleteCourse(${c.id}, '${c.course_name_cn}')">🗑 删除</button>
             </div>` : ''}
@@ -1768,6 +1758,8 @@ async function handleExcelUpload(event) {
             if (course.chinese_exempt) course.chinese_exempt = ['是', '适用', 'true', '1', 'yes'].includes(course.chinese_exempt.toLowerCase());
             if (course.english_exempt) course.english_exempt = ['是', '适用', 'true', '1', 'yes'].includes(course.english_exempt.toLowerCase());
             if (course.interview_required) course.interview_required = ['需要', '是', 'true', '1', 'yes'].includes(course.interview_required.toLowerCase());
+            if (course.chinese_req) course.chinese_req = ['是', 'true', '1', 'yes'].includes(course.chinese_req.toLowerCase()) ? 1 : 0;
+            if (course.english_req) course.english_req = ['是', 'true', '1', 'yes'].includes(course.english_req.toLowerCase()) ? 1 : 0;
 
             // 验证必填字段
             const missingFields = REQUIRED_FIELDS.filter(f => !course[f] && course[f] !== 0);
