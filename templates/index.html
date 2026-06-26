@@ -165,7 +165,11 @@
         /* 授课方式颜色映射 */
         [data-mode="授课式"] { background: #fdf6e8; color: #b8860b; }
         [data-mode="研究式"] { background: #ede7f6; color: #4527a0; }
-        .badge-degree { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+        [data-degree="高级文凭"] { background: #e0f2f1; color: #00695c; font-weight: 600; }
+        [data-degree="副学士"] { background: #e8eaf6; color: #283593; font-weight: 600; }
+        [data-degree="学士"] { background: #e3f2fd; color: #1565c0; font-weight: 600; }
+        [data-degree="硕士"] { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+        [data-degree="博士"] { background: #fce4ec; color: #ad1457; font-weight: 600; }
         /* Filter Bar */
         .filter-bar {
             display: flex; flex-wrap: wrap; gap: 12px;
@@ -1124,7 +1128,7 @@ function renderCourses() {
             <td><strong>${c.school_abbr}</strong></td>
             <td><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></td>
             <td><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></td>
-            <td><span class="badge badge-degree">${c.degree || '—'}</span></td>
+            <td><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
             <td style="font-size:12px;line-height:1.6">${studyModeHtml}</td>
             <td>${c.teaching_language}</td>
@@ -1399,7 +1403,7 @@ async function viewCourseDetail(id) {
                     })()}
                 </div></div>
                 <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year}</div></div>
-                <div class="detail-item"><div class="detail-label">学位</div><div class="detail-value">${c.degree || '—'}</div></div>
+                <div class="detail-item"><div class="detail-label">学位</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
                 <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.student_identity}</div></div>
                 <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language}</div></div>
                 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level || '-'}</div></div>
