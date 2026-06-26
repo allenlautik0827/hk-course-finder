@@ -1223,7 +1223,7 @@ function openCourseModal(id = null) {
             document.getElementById('course-academic-year').value = c.academic_year;
             document.getElementById('course-identity').value = c.student_identity;
             document.getElementById('course-degree').value = c.degree || '';
-            document.getElementById('course-format').value = c.teaching_format || '';
+            document.getElementById('course-format').value = c.teaching_format || '面授';
             document.getElementById('course-tuition-local').value = c.tuition_local || '';
             document.getElementById('course-tuition-nonlocal').value = c.tuition_non_local || '';
             document.getElementById('course-deadline-local').value = c.deadline_local || '';
@@ -1319,7 +1319,7 @@ async function saveCourse() {
         course_page_url: document.getElementById('course-page-url').value.trim(),
         course_brochure_url: document.getElementById('course-brochure-url').value.trim(),
         degree: document.getElementById('course-degree').value,
-        teaching_format: document.getElementById('course-format').value,
+        teaching_format: document.getElementById('course-format').value || '面授',
     };
 
     if (!data.school_id || !data.subject_category || !data.course_name_cn || !data.teaching_mode ||
@@ -1534,6 +1534,7 @@ const EXCEL_COLUMN_MAP = {
     '英文简称': 'course_name_en',
     '授课方式': 'teaching_mode',
     '学位': 'degree',
+    '授课形式': 'teaching_format',
     '学制': 'study_mode',
     '授课语言': 'teaching_language',
     '全日制修读时间': 'study_duration_ft',
@@ -1597,6 +1598,7 @@ function downloadTemplate() {
             '课程名称（英文）': 'MFin',
             '授课方式': '授课式',
             '学位': '硕士',
+            '授课形式': '面授',
             '学制': '全日制/非全日制',
             '授课语言': '英语',
             '全日制修读时间': 1,
@@ -1639,6 +1641,7 @@ function downloadTemplate() {
             '课程名称（英文）': 'MSc CS',
             '授课方式': '授课式',
             '学位': '硕士',
+            '授课形式': '面授',
             '学制': '仅全日制',
             '授课语言': '英语',
             '全日制修读时间': 1,
@@ -1811,7 +1814,7 @@ function showImportPreview(rows, errors) {
     // 预览表格
     const displayFields = [
         ['school_abbreviation', '学校'], ['subject_category', '学科'], ['course_name_cn', '课程名称'],
-        ['teaching_mode', '授课方式'], ['degree', '学位'], ['study_mode', '学制'], ['teaching_language', '语言'],
+        ['teaching_mode', '授课方式'], ['degree', '学位'], ['teaching_format', '授课形式'], ['study_mode', '学制'], ['teaching_language', '语言'],
         ['academic_year', '学年'], ['student_identity', '身份'], ['tuition_local', '学费(本地)'],
         ['tuition_non_local', '学费(非本地)'],
     ];

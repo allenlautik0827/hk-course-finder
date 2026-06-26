@@ -646,7 +646,7 @@ function openCourseModal(id){
         setVal('cm-name-en',c.course_name_en);setVal('cm-language',c.teaching_language);
         setVal('cm-study-mode',c.study_mode);setVal('cm-dur-ft',c.study_duration_ft||'');
         setVal('cm-dur-pt',c.study_duration_pt||'');setVal('cm-year',c.academic_year);
-        setVal('cm-identity',c.student_identity);setVal('cm-degree',c.degree||'');setVal('cm-format',c.teaching_format||'');
+        setVal('cm-identity',c.student_identity);setVal('cm-degree',c.degree||'');setVal('cm-format',c.teaching_format||'面授');
         setVal('cm-tuition-local',c.tuition_local||'');
         setVal('cm-tuition-nonlocal',c.tuition_non_local||'');
         setVal('cm-deadline-local',c.deadline_local||'');setVal('cm-deadline-nonlocal',c.deadline_non_local||'');
@@ -689,7 +689,7 @@ function saveCourse(){
         academic_year:document.getElementById('cm-year').value,
         student_identity:document.getElementById('cm-identity').value,
         degree:document.getElementById('cm-degree').value,
-        teaching_format:document.getElementById('cm-format').value,
+        teaching_format:document.getElementById('cm-format').value||'面授',
         tuition_local:parseFloat(document.getElementById('cm-tuition-local').value)||0,
         tuition_non_local:parseFloat(document.getElementById('cm-tuition-nonlocal').value)||0,
         deadline_local:document.getElementById('cm-deadline-local').value,
@@ -916,6 +916,7 @@ const EXCEL_COLUMN_MAP = {
     '课程名称（英文）':'course_name_en','课程名称(英文)':'course_name_en','英文简称':'course_name_en',
     '授课方式':'teaching_mode',
     '学位':'degree',
+    '授课形式':'teaching_format',
     '学制':'study_mode',
     '授课语言':'teaching_language',
     '全日制修读时间':'study_duration_ft','全日制修读时间（年）':'study_duration_ft',
@@ -946,7 +947,7 @@ function downloadTemplate() {
         {
             '学校简称':'HKU','学科分类':'商科','课程名称（中文）':'金融学硕士','课程名称（英文）':'MFin',
             '授课方式':'授课式',
-            '学位':'硕士','学制':'全日制/非全日制','授课语言':'英语',
+            '学位':'硕士','授课形式':'面授','学制':'全日制/非全日制','授课语言':'英语',
             '全日制修读时间':1,'非全日制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
             '学费（本地生）':150000,'学费（非本地生）':300000,
             '截止报名（本地生）':'2027-01-31','截止报名（非本地生）':'2026-12-31',
@@ -960,7 +961,7 @@ function downloadTemplate() {
         {
             '学校简称':'CUHK','学科分类':'工科','课程名称（中文）':'计算机科学硕士','课程名称（英文）':'MSc CS',
             '授课方式':'授课式',
-            '学位':'硕士','学制':'仅全日制','授课语言':'英语',
+            '学位':'硕士','授课形式':'面授','学制':'仅全日制','授课语言':'英语',
             '全日制修读时间':1,'非全日制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
             '学费（本地生）':120000,'学费（非本地生）':250000,
             '截止报名（本地生）':'2027-02-28','截止报名（非本地生）':'2027-01-15',
@@ -1080,7 +1081,7 @@ function showImportPreview(rows, errors) {
 
     const displayFields = [
         ['school_abbreviation','学校'],['subject_category','学科'],['course_name_cn','课程名称'],
-        ['teaching_mode','授课方式'],['degree','学位'],['study_mode','学制'],['teaching_language','语言'],
+        ['teaching_mode','授课方式'],['degree','学位'],['teaching_format','授课形式'],['study_mode','学制'],['teaching_language','语言'],
         ['academic_year','学年'],['student_identity','身份'],['tuition_local','学费(本地)'],
         ['tuition_non_local','学费(非本地)'],
     ];
