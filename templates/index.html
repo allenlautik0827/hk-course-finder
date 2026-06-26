@@ -447,7 +447,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>学历/文凭</label>
+                    <label>学位/文凭</label>
                     <select id="filter-degree" onchange="filterCourses()">
                         <option value="">全部</option>
                         <option value="深造文凭">深造文凭</option>
@@ -511,21 +511,21 @@
                     <table id="courses-table">
                         <thead>
                             <tr>
-                                <th>课程编号</th>
+                                <th>序号</th>
                                 <th>学校</th>
                                 <th>学科</th>
                                 <th>授课方式</th>
-                                <th>学历/文凭</th>
-                                <th>课程名称</th>
+                                <th>学位/文凭</th>
+                                <th>课程</th>
                                 <th>学制</th>
-                                <th>授课语言</th>
+                                <th>语言</th>
                                 <th>修读时间</th>
                                 <th>学年</th>
                                 <th>身份</th>
-                                <th>全日制学费（港币）</th>
-                                <th>兼读制学费（港币）</th>
-                                <th>截止报名（秋季）</th>
-                                <th>截止报名（春季）</th>
+                                <th>FT学费</th>
+                                <th>PT学费</th>
+                                <th>截止日-秋</th>
+                                <th>截止日-春</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -687,7 +687,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>学历/文凭</label>
+                        <label>学位/文凭</label>
                         <select id="course-degree">
                             <option value="">请选择</option>
                             <option>深造文凭</option><option>高级文凭</option><option>副学士</option><option>学士</option>
@@ -1141,21 +1141,19 @@ function renderCourses() {
         updateAdminUI();
         return;
     }
-    tbody.innerHTML = allCourses.map(c => {
-        const studyModeHtml = (c.study_mode||'').replace(/\//g, '<br>');
-        const identityHtml = (c.student_identity||'').replace(/\//g, '<br>');
+    tbody.innerHTML = allCourses.map((c, i) => {
         return `<tr>
-            <td><span class="badge badge-primary">${c.course_code}</span></td>
+            <td style="text-align:center;color:var(--text-secondary);font-size:12px">${i + 1}</td>
             <td><strong>${c.school_abbr}</strong></td>
             <td><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></td>
             <td><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></td>
             <td><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></td>
             <td><span class="clickable" onclick="viewCourseDetail(${c.id})" title="点击查看详情">${c.course_name_cn}${c.course_name_en ? '（' + c.course_name_en + '）' : ''}</span></td>
-            <td style="font-size:12px;line-height:1.6;white-space:nowrap">${studyModeHtml}</td>
-            <td>${c.teaching_language}</td>
+            <td>${c.study_mode_display || c.study_mode || '—'}</td>
+            <td>${c.language_display || c.teaching_language || '—'}</td>
             <td style="font-size:13px">${c.study_duration_display||'—'}</td>
-            <td>${c.academic_year}</td>
-            <td style="font-size:12px;line-height:1.6;white-space:nowrap">${identityHtml}</td>
+            <td>${c.academic_year_display || c.academic_year || '—'}</td>
+            <td>${c.identity_display || c.student_identity || '—'}</td>
             <td style="font-size:12px;line-height:1.6">${c.tuition_ft_display||'—'}</td>
             <td style="font-size:12px;line-height:1.6">${c.tuition_pt_display||'—'}</td>
             <td style="font-size:12px;line-height:1.6">${c.deadline_autumn_display||'—'}</td>
@@ -1415,17 +1413,6 @@ async function viewCourseDetail(id) {
         // 清理分数/等级数值（去掉尾部"分""级"，避免"550分分"）
         const cs = v => { if (v == null || v === '') return ''; return String(v).replace(/(分|级)$/, ''); };
 
-        // 格式化学费和截止日期
-
-        const tuitionFtLocal = c.tuition_ft_local ? formatCurrency(c.tuition_ft_local) : 'HKD-';
-        const tuitionFtNonLocal = c.tuition_ft_nonlocal ? formatCurrency(c.tuition_ft_nonlocal) : 'HKD-';
-        const tuitionPtLocal = c.tuition_pt_local ? formatCurrency(c.tuition_pt_local) : 'HKD-';
-        const tuitionPtNonLocal = c.tuition_pt_nonlocal ? formatCurrency(c.tuition_pt_nonlocal) : 'HKD-';
-        const deadlineAutumnLocal = c.deadline_autumn_local ? formatDate(c.deadline_autumn_local) : '-';
-        const deadlineAutumnNonLocal = c.deadline_autumn_nonlocal ? formatDate(c.deadline_autumn_nonlocal) : '-';
-        const deadlineSpringLocal = c.deadline_spring_local ? formatDate(c.deadline_spring_local) : '-';
-        const deadlineSpringNonLocal = c.deadline_spring_nonlocal ? formatDate(c.deadline_spring_nonlocal) : '-';
-
         body.innerHTML = `
             <!-- 1. 课程概要 -->
             <div class="detail-section"><h4>📌 课程概要</h4></div>
@@ -1433,26 +1420,19 @@ async function viewCourseDetail(id) {
                 <div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${c.school_name_cn}（${c.school_name_en}）</div></div>
                 <div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge" data-subject="${c.subject_category}">${c.subject_category}</span></div></div>
                 <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${c.teaching_mode}">${c.teaching_mode}</span></div></div>
-                <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode}</div></div>
-                <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">
-                    ${c.study_duration_display || (() => {
-                        const fmtYr = v => v == null ? '-' : (Number.isInteger(v) ? v : (v === Math.floor(v) ? Math.floor(v) : v)) + '年';
-                        if (c.study_mode === '全日制/兼读制') return fmtYr(c.study_duration_ft) + '/' + fmtYr(c.study_duration_pt);
-                        if (c.study_mode === '全日制' || c.study_mode === '仅全日制') return fmtYr(c.study_duration_ft);
-                        return fmtYr(c.study_duration_pt);
-                    })()}
-                </div></div>
-                <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year}</div></div>
-                <div class="detail-item"><div class="detail-label">学历/文凭</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
-                <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.student_identity}</div></div>
-                <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${c.teaching_language}</div></div>
+                <div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${c.study_mode_display || c.study_mode}</div></div>
+                <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${c.study_duration_display || '—'}</div></div>
+                <div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${c.academic_year_display || c.academic_year}</div></div>
+                <div class="detail-item"><div class="detail-label">学位/文凭</div><div class="detail-value"><span class="badge" data-degree="${c.degree || ''}">${c.degree || '—'}</span></div></div>
+                <div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${c.identity_display || c.student_identity}</div></div>
+                <div class="detail-item"><div class="detail-label">语言</div><div class="detail-value">${c.language_display || c.teaching_language}</div></div>
                 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${c.teaching_format || '—'}</div></div>
                 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level || '-'}</div></div>
                 <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number || '-'}</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">全日制学费（港币）</div><div class="detail-value">${tuitionFtLocal}（本地生）/ ${tuitionFtNonLocal}（非本地生）</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">兼读制学费（港币）</div><div class="detail-value">${tuitionPtLocal}（本地生）/ ${tuitionPtNonLocal}（非本地生）</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">截止报名（秋季）</div><div class="detail-value">${deadlineAutumnLocal}（本地生）/ ${deadlineAutumnNonLocal}（非本地生）</div></div>
-                <div class="detail-item detail-full"><div class="detail-label">截止报名（春季）</div><div class="detail-value">${deadlineSpringLocal}（本地生）/ ${deadlineSpringNonLocal}（非本地生）</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">FT学费</div><div class="detail-value">${c.tuition_ft_display || '—'}</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">PT学费</div><div class="detail-value">${c.tuition_pt_display || '—'}</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">截止日-秋</div><div class="detail-value">${c.deadline_autumn_display || '—'}</div></div>
+                <div class="detail-item detail-full"><div class="detail-label">截止日-春</div><div class="detail-value">${c.deadline_spring_display || '—'}</div></div>
             </div>
 
             <!-- 2. 报读要求 -->

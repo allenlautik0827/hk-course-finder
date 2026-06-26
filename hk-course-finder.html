@@ -202,7 +202,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="panel">
 <div class="panel-header"><h3>📚 课程列表 <span id="course-count" class="text-muted"></span></h3></div>
 <div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
-<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学历/文凭</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>全日制学费（港币）</th><th>兼读制学费（港币）</th><th>截止报名（秋季）</th><th>截止报名（春季）</th><th>操作</th>
+<th>序号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学位/文凭</th><th>课程</th><th>学制</th><th>语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>FT学费</th><th>PT学费</th><th>截止日-秋</th><th>截止日-春</th><th>操作</th>
 </tr></thead><tbody id="courses-tbody"></tbody></table></div></div>
 </div></div>
 
@@ -559,7 +559,7 @@ function renderCourses(){
     document.getElementById('course-count').textContent='（共 '+list.length+' 个课程）';
     const tbody=document.getElementById('courses-tbody');
     if(!list.length){tbody.innerHTML='<tr><td colspan="16"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
-    tbody.innerHTML=list.map(c=>{
+    tbody.innerHTML=list.map((c,i)=>{
         const s=getSchool(c.school_id);
         const fmtYr=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
         let dur='—';
@@ -570,60 +570,78 @@ function renderCourses(){
         } else {
             dur=c.study_duration_pt!=null?fmtYr(c.study_duration_pt):'—';
         }
-        const studyModeHtml=esc(c.study_mode).replace(/\//g,'<br>');
-        const identityHtml=esc(c.student_identity).replace(/\//g,'<br>');
+        // Compact display formats
+        let studyModeDisplay='—';
+        if(c.study_mode==='全日制/兼读制'||c.study_mode==='全日制/非全日制') studyModeDisplay='FT/PT';
+        else if(c.study_mode==='全日制'||c.study_mode==='仅全日制') studyModeDisplay='FT';
+        else if(c.study_mode==='兼读制'||c.study_mode==='仅兼读制'||c.study_mode==='非全日制'||c.study_mode==='仅非全日制') studyModeDisplay='PT';
+        else studyModeDisplay=c.study_mode||'—';
+        
+        let languageDisplay=c.teaching_language||'—';
+        if(languageDisplay.includes('双语')) languageDisplay='双语';
+        
+        let academicYearDisplay='—';
+        if(c.academic_year&&c.academic_year.length>=7) academicYearDisplay=c.academic_year.substring(2);
+        else academicYearDisplay=c.academic_year||'—';
+        
+        let identityDisplay='—';
+        if(c.student_identity==='本地生/非本地生') identityDisplay='L/NL';
+        else if(c.student_identity==='仅本地生'||c.student_identity==='本地生') identityDisplay='L';
+        else if(c.student_identity==='仅非本地生'||c.student_identity==='非本地生') identityDisplay='NL';
+        else identityDisplay=c.student_identity||'—';
+        
         let tuitionFtHtml='—';
         const tfl=c.tuition_ft_local?Number(c.tuition_ft_local):null;
         const tfn=c.tuition_ft_nonlocal?Number(c.tuition_ft_nonlocal):null;
         if(tfl!==null&&tfn!==null&&tfl!==tfn){
-            tuitionFtHtml='HKD'+tfl.toLocaleString()+'（本地生）<br>HKD'+tfn.toLocaleString()+'（非本地生）';
+            tuitionFtHtml=tfl.toLocaleString()+'(L)/'+tfn.toLocaleString()+'(NL)';
         } else if(tfl!==null){
-            tuitionFtHtml='HKD'+tfl.toLocaleString()+'（本地生）';
+            tuitionFtHtml=tfl.toLocaleString()+'(L)';
         } else if(tfn!==null){
-            tuitionFtHtml='HKD'+tfn.toLocaleString()+'（非本地生）';
+            tuitionFtHtml=tfn.toLocaleString()+'(NL)';
         }
         let tuitionPtHtml='—';
         const tpl=c.tuition_pt_local?Number(c.tuition_pt_local):null;
         const tpn=c.tuition_pt_nonlocal?Number(c.tuition_pt_nonlocal):null;
         if(tpl!==null&&tpn!==null&&tpl!==tpn){
-            tuitionPtHtml='HKD'+tpl.toLocaleString()+'（本地生）<br>HKD'+tpn.toLocaleString()+'（非本地生）';
+            tuitionPtHtml=tpl.toLocaleString()+'(L)/'+tpn.toLocaleString()+'(NL)';
         } else if(tpl!==null){
-            tuitionPtHtml='HKD'+tpl.toLocaleString()+'（本地生）';
+            tuitionPtHtml=tpl.toLocaleString()+'(L)';
         } else if(tpn!==null){
-            tuitionPtHtml='HKD'+tpn.toLocaleString()+'（非本地生）';
+            tuitionPtHtml=tpn.toLocaleString()+'(NL)';
         }
         let deadlineAutumnHtml='—';
-        const dal=c.deadline_autumn_local?fmtDate(c.deadline_autumn_local):null;
-        const dan=c.deadline_autumn_nonlocal?fmtDate(c.deadline_autumn_nonlocal):null;
+        const dal=c.deadline_autumn_local;
+        const dan=c.deadline_autumn_nonlocal;
         if(dal&&dan&&dal!==dan){
-            deadlineAutumnHtml=dal+'（本地生）<br>'+dan+'（非本地生）';
+            deadlineAutumnHtml=fmtDateCompact(dal)+'(L)/'+fmtDateCompact(dan)+'(NL)';
         } else if(dal){
-            deadlineAutumnHtml=dal+'（本地生）';
+            deadlineAutumnHtml=fmtDateCompact(dal)+'(L)';
         } else if(dan){
-            deadlineAutumnHtml=dan+'（非本地生）';
+            deadlineAutumnHtml=fmtDateCompact(dan)+'(NL)';
         }
         let deadlineSpringHtml='—';
-        const dsl=c.deadline_spring_local?fmtDate(c.deadline_spring_local):null;
-        const dsn=c.deadline_spring_nonlocal?fmtDate(c.deadline_spring_nonlocal):null;
+        const dsl=c.deadline_spring_local;
+        const dsn=c.deadline_spring_nonlocal;
         if(dsl&&dsn&&dsl!==dsn){
-            deadlineSpringHtml=dsl+'（本地生）<br>'+dsn+'（非本地生）';
+            deadlineSpringHtml=fmtDateCompact(dsl)+'(L)/'+fmtDateCompact(dsn)+'(NL)';
         } else if(dsl){
-            deadlineSpringHtml=dsl+'（本地生）';
+            deadlineSpringHtml=fmtDateCompact(dsl)+'(L)';
         } else if(dsn){
-            deadlineSpringHtml=dsn+'（非本地生）';
+            deadlineSpringHtml=fmtDateCompact(dsn)+'(NL)';
         }
         return `<tr>
-<td><span class="badge badge-primary">${esc(c.course_code)}</span></td>
+<td style="text-align:center;color:var(--text-secondary);font-size:12px">${i+1}</td>
 <td><strong>${s?s.abbreviation:'—'}</strong></td>
 <td><span class="badge" data-subject="${esc(c.subject_category)}">${esc(c.subject_category)}</span></td>
 <td><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></td>
 <td><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></td>
 <td><span class="clickable" onclick="viewDetail(${c.id})">${esc(c.course_name_cn)}${c.course_name_en?'（'+esc(c.course_name_en)+'）':''}</span></td>
-<td style="font-size:12px;line-height:1.6;white-space:nowrap">${studyModeHtml}</td>
-<td>${esc(c.teaching_language)}</td>
+<td>${studyModeDisplay}</td>
+<td>${esc(languageDisplay)}</td>
 <td style="font-size:13px">${dur}</td>
-<td>${esc(c.academic_year)}</td>
-<td style="font-size:12px;line-height:1.6;white-space:nowrap">${identityHtml}</td>
+<td>${academicYearDisplay}</td>
+<td>${identityDisplay}</td>
 <td style="font-size:12px;line-height:1.6">${tuitionFtHtml}</td>
 <td style="font-size:12px;line-height:1.6">${tuitionPtHtml}</td>
 <td style="font-size:12px;line-height:1.6">${deadlineAutumnHtml}</td>
@@ -809,15 +827,31 @@ function viewDetail(id){
     const c=DB.courses.find(x=>x.id===id);if(!c)return;
     const cs=v=>{if(v==null||v==='')return'';return String(v).replace(/(分|级)$/,'')};
     const s=getSchool(c.school_id);
-    const tfl=c.tuition_ft_local?'HKD'+Number(c.tuition_ft_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
-    const tfn=c.tuition_ft_nonlocal?'HKD'+Number(c.tuition_ft_nonlocal).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
-    const tpl=c.tuition_pt_local?'HKD'+Number(c.tuition_pt_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
-    const tpn=c.tuition_pt_nonlocal?'HKD'+Number(c.tuition_pt_nonlocal).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
-    const dal=c.deadline_autumn_local?fmtDate(c.deadline_autumn_local):'—';
-    const dan=c.deadline_autumn_nonlocal?fmtDate(c.deadline_autumn_nonlocal):'—';
-    const dsl=c.deadline_spring_local?fmtDate(c.deadline_spring_local):'—';
-    const dsn=c.deadline_spring_nonlocal?fmtDate(c.deadline_spring_nonlocal):'—';
+    const tfl=c.tuition_ft_local?Number(c.tuition_ft_local).toLocaleString()+' (L)':'— (L)';
+    const tfn=c.tuition_ft_nonlocal?Number(c.tuition_ft_nonlocal).toLocaleString()+' (NL)':'— (NL)';
+    const tpl=c.tuition_pt_local?Number(c.tuition_pt_local).toLocaleString()+' (L)':'— (L)';
+    const tpn=c.tuition_pt_nonlocal?Number(c.tuition_pt_nonlocal).toLocaleString()+' (NL)':'— (NL)';
+    const dal=c.deadline_autumn_local?fmtDateCompact(c.deadline_autumn_local):'—';
+    const dan=c.deadline_autumn_nonlocal?fmtDateCompact(c.deadline_autumn_nonlocal):'—';
+    const dsl=c.deadline_spring_local?fmtDateCompact(c.deadline_spring_local):'—';
+    const dsn=c.deadline_spring_nonlocal?fmtDateCompact(c.deadline_spring_nonlocal):'—';
     const fmtYr2=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
+    // Compact display helpers
+    let studyModeDisplay='—';
+    if(c.study_mode==='全日制/兼读制'||c.study_mode==='全日制/非全日制') studyModeDisplay='FT/PT';
+    else if(c.study_mode==='全日制'||c.study_mode==='仅全日制') studyModeDisplay='FT';
+    else if(c.study_mode==='兼读制'||c.study_mode==='仅兼读制'||c.study_mode==='非全日制'||c.study_mode==='仅非全日制') studyModeDisplay='PT';
+    else studyModeDisplay=c.study_mode||'—';
+    let languageDisplay=c.teaching_language||'—';
+    if(languageDisplay.includes('双语')) languageDisplay='双语';
+    let academicYearDisplay='—';
+    if(c.academic_year&&c.academic_year.length>=7) academicYearDisplay=c.academic_year.substring(2);
+    else academicYearDisplay=c.academic_year||'—';
+    let identityDisplay='—';
+    if(c.student_identity==='本地生/非本地生') identityDisplay='L/NL';
+    else if(c.student_identity==='仅本地生'||c.student_identity==='本地生') identityDisplay='L';
+    else if(c.student_identity==='仅非本地生'||c.student_identity==='非本地生') identityDisplay='NL';
+    else identityDisplay=c.student_identity||'—';
     let dur='—';
     if(c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'/'+fmtYr2(c.study_duration_pt);
     else if(c.study_mode==='全日制'||c.study_mode==='仅全日制')dur=c.study_duration_ft!=null?fmtYr2(c.study_duration_ft):'—';
@@ -829,19 +863,19 @@ function viewDetail(id){
 <div class="detail-item"><div class="detail-label">学校名称</div><div class="detail-value">${s?s.name_cn+'（'+s.name_en+'）':'—'}</div></div>
 <div class="detail-item"><div class="detail-label">学科分类</div><div class="detail-value"><span class="badge" data-subject="${esc(c.subject_category)}">${esc(c.subject_category)}</span></div></div>
 <div class="detail-item"><div class="detail-label">授课方式</div><div class="detail-value"><span class="badge" data-mode="${esc(c.teaching_mode)}">${esc(c.teaching_mode)}</span></div></div>
-<div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${esc(c.study_mode)}</div></div>
+<div class="detail-item"><div class="detail-label">学制</div><div class="detail-value">${studyModeDisplay}</div></div>
 <div class="detail-item"><div class="detail-label">修读时间</div><div class="detail-value">${dur}</div></div>
-<div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${esc(c.academic_year)}</div></div>
-<div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${esc(c.student_identity)}</div></div>
-<div class="detail-item"><div class="detail-label">学历/文凭</div><div class="detail-value"><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></div></div>
+<div class="detail-item"><div class="detail-label">学年</div><div class="detail-value">${academicYearDisplay}</div></div>
+<div class="detail-item"><div class="detail-label">身份</div><div class="detail-value">${identityDisplay}</div></div>
+<div class="detail-item"><div class="detail-label">学位/文凭</div><div class="detail-value"><span class="badge" data-degree="${esc(c.degree||'')}">${esc(c.degree||'—')}</span></div></div>
 <div class="detail-item"><div class="detail-label">授课形式</div><div class="detail-value">${esc(c.teaching_format||'—')}</div></div>
-<div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${esc(c.teaching_language)}</div></div>
+<div class="detail-item"><div class="detail-label">语言</div><div class="detail-value">${languageDisplay}</div></div>
 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level||'—'}</div></div>
 <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number||'—'}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">全日制学费（港币）</div><div class="detail-value">${tfl} / ${tfn}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">兼读制学费（港币）</div><div class="detail-value">${tpl} / ${tpn}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">截止报名（秋季）</div><div class="detail-value">${dal}（本地生）/ ${dan}（非本地生）</div></div>
-<div class="detail-item detail-full"><div class="detail-label">截止报名（春季）</div><div class="detail-value">${dsl}（本地生）/ ${dsn}（非本地生）</div></div>
+<div class="detail-item detail-full"><div class="detail-label">FT学费</div><div class="detail-value">${tfl} / ${tfn}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">PT学费</div><div class="detail-value">${tpl} / ${tpn}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">截止日-秋</div><div class="detail-value">${dal} / ${dan}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">截止日-春</div><div class="detail-value">${dsl} / ${dsn}</div></div>
 </div>
 <div class="detail-section"><h4>📝 报读要求</h4></div>
 <div class="detail-grid">

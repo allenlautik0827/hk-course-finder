@@ -606,28 +606,28 @@ def format_course(c):
     # 格式化全日制学费
     tfl = c.get('tuition_ft_local') or 0
     tfn = c.get('tuition_ft_nonlocal') or 0
-    ft_local_str = f"HKD{int(tfl):,}" if tfl else ''
-    ft_nonlocal_str = f"HKD{int(tfn):,}" if tfn else ''
+    ft_local_str = f"{int(tfl):,}" if tfl else ''
+    ft_nonlocal_str = f"{int(tfn):,}" if tfn else ''
     if ft_local_str and ft_nonlocal_str and ft_local_str != ft_nonlocal_str:
-        tuition_ft_display = f"{ft_local_str}（本地生） / {ft_nonlocal_str}（非本地生）"
+        tuition_ft_display = f"{ft_local_str}(L)/{ft_nonlocal_str}(NL)"
     elif ft_local_str:
-        tuition_ft_display = f"{ft_local_str}（本地生）"
+        tuition_ft_display = f"{ft_local_str}(L)"
     elif ft_nonlocal_str:
-        tuition_ft_display = f"{ft_nonlocal_str}（非本地生）"
+        tuition_ft_display = f"{ft_nonlocal_str}(NL)"
     else:
         tuition_ft_display = '—'
 
     # 格式化兼读制学费
     tpl = c.get('tuition_pt_local') or 0
     tpn = c.get('tuition_pt_nonlocal') or 0
-    pt_local_str = f"HKD{int(tpl):,}" if tpl else ''
-    pt_nonlocal_str = f"HKD{int(tpn):,}" if tpn else ''
+    pt_local_str = f"{int(tpl):,}" if tpl else ''
+    pt_nonlocal_str = f"{int(tpn):,}" if tpn else ''
     if pt_local_str and pt_nonlocal_str and pt_local_str != pt_nonlocal_str:
-        tuition_pt_display = f"{pt_local_str}（本地生） / {pt_nonlocal_str}（非本地生）"
+        tuition_pt_display = f"{pt_local_str}(L)/{pt_nonlocal_str}(NL)"
     elif pt_local_str:
-        tuition_pt_display = f"{pt_local_str}（本地生）"
+        tuition_pt_display = f"{pt_local_str}(L)"
     elif pt_nonlocal_str:
-        tuition_pt_display = f"{pt_nonlocal_str}（非本地生）"
+        tuition_pt_display = f"{pt_nonlocal_str}(NL)"
     else:
         tuition_pt_display = '—'
 
@@ -647,11 +647,15 @@ def format_course(c):
     dal = c.get('deadline_autumn_local') or ''
     dan = c.get('deadline_autumn_nonlocal') or ''
     if dal and dan and dal != dan:
-        deadline_autumn_display = f"{dal}（本地生） / {dan}（非本地生）"
+        dl_fmt = dal[2:].replace('-', '/') if len(dal) >= 10 else dal
+        dn_fmt = dan[2:].replace('-', '/') if len(dan) >= 10 else dan
+        deadline_autumn_display = f"{dl_fmt}(L)/{dn_fmt}(NL)"
     elif dal:
-        deadline_autumn_display = f"{dal}（本地生）"
+        dl_fmt = dal[2:].replace('-', '/') if len(dal) >= 10 else dal
+        deadline_autumn_display = f"{dl_fmt}(L)"
     elif dan:
-        deadline_autumn_display = f"{dan}（非本地生）"
+        dn_fmt = dan[2:].replace('-', '/') if len(dan) >= 10 else dan
+        deadline_autumn_display = f"{dn_fmt}(NL)"
     else:
         deadline_autumn_display = '—'
 
@@ -659,11 +663,15 @@ def format_course(c):
     dsl = c.get('deadline_spring_local') or ''
     dsn = c.get('deadline_spring_nonlocal') or ''
     if dsl and dsn and dsl != dsn:
-        deadline_spring_display = f"{dsl}（本地生） / {dsn}（非本地生）"
+        dl_fmt = dsl[2:].replace('-', '/') if len(dsl) >= 10 else dsl
+        dn_fmt = dsn[2:].replace('-', '/') if len(dsn) >= 10 else dsn
+        deadline_spring_display = f"{dl_fmt}(L)/{dn_fmt}(NL)"
     elif dsl:
-        deadline_spring_display = f"{dsl}（本地生）"
+        dl_fmt = dsl[2:].replace('-', '/') if len(dsl) >= 10 else dsl
+        deadline_spring_display = f"{dl_fmt}(L)"
     elif dsn:
-        deadline_spring_display = f"{dsn}（非本地生）"
+        dn_fmt = dsn[2:].replace('-', '/') if len(dsn) >= 10 else dsn
+        deadline_spring_display = f"{dn_fmt}(NL)"
     else:
         deadline_spring_display = '—'
 
@@ -682,6 +690,26 @@ def format_course(c):
         'study_duration_ft': ft,
         'study_duration_pt': pt,
         'study_duration_display': study_duration,
+        'study_mode_display': (
+            'FT/PT' if study_mode in ('全日制/兼读制', '全日制/非全日制')
+            else 'FT' if study_mode in ('全日制', '仅全日制')
+            else 'PT' if study_mode in ('兼读制', '仅兼读制', '非全日制', '仅非全日制')
+            else study_mode
+        ),
+        'language_display': (
+            '双语' if '双语' in c['teaching_language']
+            else c['teaching_language']
+        ),
+        'academic_year_display': (
+            c['academic_year'][2:].replace('/', '/') if len(c['academic_year']) >= 7
+            else c['academic_year']
+        ),
+        'identity_display': (
+            'L/NL' if c['student_identity'] in ('本地生/非本地生',)
+            else 'L' if c['student_identity'] in ('仅本地生', '本地生')
+            else 'NL' if c['student_identity'] in ('仅非本地生', '非本地生')
+            else c['student_identity']
+        ),
         'teaching_language': c['teaching_language'],
         'academic_year': c['academic_year'],
         'student_identity': c['student_identity'],
