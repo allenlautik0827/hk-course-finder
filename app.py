@@ -349,7 +349,13 @@ def sql_insert(query, params=None):
         cur = db.cursor()
         cur.execute(pg_query, p)
         row = cur.fetchone()
-        return row[0] if row else None
+        if row is None:
+            return None
+        # RealDictCursor returns a dict-like row: access by key
+        if isinstance(row, dict):
+            return row['id']
+        # Fallback for regular cursor (tuple-like)
+        return row[0]
     else:
         cur = db.execute(query, p)
         return cur.lastrowid
@@ -712,9 +718,8 @@ def add_course():
         return jsonify({'id': course_id, 'course_code': new_code, 'message': '课程添加成功'}), 201
     except Exception as e:
         import traceback
-        err_detail = traceback.format_exc()
-        app.logger.error(f"add_course error: {err_detail}")
-        return jsonify({'error': str(e) or repr(e), 'detail': err_detail[-500:]}), 400
+        app.logger.error(f"add_course error: {traceback.format_exc()}")
+        return jsonify({'error': str(e) or repr(e)}), 400
 
 
 @app.route('/api/courses/batch', methods=['POST'])
