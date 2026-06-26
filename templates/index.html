@@ -1413,10 +1413,7 @@ async function viewCourseDetail(id) {
         const cs = v => { if (v == null || v === '') return ''; return String(v).replace(/(分|级)$/, ''); };
 
         // 格式化学费和截止日期
-        const tuitionLocal = c.tuition_local ? formatCurrency(c.tuition_local) : 'HKD-';
-        const tuitionNonLocal = c.tuition_non_local ? formatCurrency(c.tuition_non_local) : 'HKD-';
-        const deadlineLocal = c.deadline_local ? formatDate(c.deadline_local) : '-';
-        const deadlineNonLocal = c.deadline_non_local ? formatDate(c.deadline_non_local) : '-';
+
         const tuitionFtLocal = c.tuition_ft_local ? formatCurrency(c.tuition_ft_local) : 'HKD-';
         const tuitionFtNonLocal = c.tuition_ft_nonlocal ? formatCurrency(c.tuition_ft_nonlocal) : 'HKD-';
         const tuitionPtLocal = c.tuition_pt_local ? formatCurrency(c.tuition_pt_local) : 'HKD-';
@@ -1538,8 +1535,11 @@ async function loadAuditLog() {
                         'name_cn': '学校名称(中)', 'abbreviation': '简称', 'name_en': '学校名称(英)', 'website': '网站',
                         'course_name_cn': '课程名称', 'course_name_en': '英文简称', 'subject_category': '学科分类',
                         'teaching_mode': '授课方式', 'study_mode': '学制', 'teaching_language': '授课语言',
-                        'academic_year': '学年', 'student_identity': '身份', 'tuition_local': '学费(本地)',
-                        'tuition_non_local': '学费(非本地)', 'deadline_local': '截止(本地)', 'deadline_non_local': '截止(非本地)',
+                        'academic_year': '学年', 'student_identity': '身份',
+                        'tuition_ft_local': '全日制学费(本地)', 'tuition_ft_nonlocal': '全日制学费(非本地)',
+                        'tuition_pt_local': '兼读制学费(本地)', 'tuition_pt_nonlocal': '兼读制学费(非本地)',
+                        'deadline_autumn_local': '截止(秋季-本地)', 'deadline_autumn_nonlocal': '截止(秋季-非本地)',
+                        'deadline_spring_local': '截止(春季-本地)', 'deadline_spring_nonlocal': '截止(春季-非本地)',
                     };
                     const fn = fieldNames[k] || k;
                     return `<div class="change-row"><span class="field">${fn}</span>: ${v.old || '(空)'} → ${v.new || '(空)'}</div>`;
@@ -1594,22 +1594,38 @@ const EXCEL_COLUMN_MAP = {
     '兼读制修读时间（年）': 'study_duration_pt',
     '学年': 'academic_year',
     '身份': 'student_identity',
-    '学费（本地生）': 'tuition_local',
-    '学费-本地生': 'tuition_local',
-    '学费(本地生)': 'tuition_local',
-    '学费本地': 'tuition_local',
-    '学费（非本地生）': 'tuition_non_local',
-    '学费-非本地生': 'tuition_non_local',
-    '学费(非本地生)': 'tuition_non_local',
-    '学费非本地': 'tuition_non_local',
-    '截止报名（本地生）': 'deadline_local',
-    '截止报名-本地生': 'deadline_local',
-    '截止(本地生)': 'deadline_local',
-    '截止本地': 'deadline_local',
-    '截止报名（非本地生）': 'deadline_non_local',
-    '截止报名-非本地生': 'deadline_non_local',
-    '截止(非本地生)': 'deadline_non_local',
-    '截止非本地': 'deadline_non_local',
+    '全日制学费（本地生）': 'tuition_ft_local',
+    '全日制学费-本地生': 'tuition_ft_local',
+    '全日制学费(本地生)': 'tuition_ft_local',
+    '全日制学费本地': 'tuition_ft_local',
+    '全日制学费（非本地生）': 'tuition_ft_nonlocal',
+    '全日制学费-非本地生': 'tuition_ft_nonlocal',
+    '全日制学费(非本地生)': 'tuition_ft_nonlocal',
+    '全日制学费非本地': 'tuition_ft_nonlocal',
+    '兼读制学费（本地生）': 'tuition_pt_local',
+    '兼读制学费-本地生': 'tuition_pt_local',
+    '兼读制学费(本地生)': 'tuition_pt_local',
+    '兼读制学费本地': 'tuition_pt_local',
+    '兼读制学费（非本地生）': 'tuition_pt_nonlocal',
+    '兼读制学费-非本地生': 'tuition_pt_nonlocal',
+    '兼读制学费(非本地生)': 'tuition_pt_nonlocal',
+    '兼读制学费非本地': 'tuition_pt_nonlocal',
+    '截止报名（秋季-本地生）': 'deadline_autumn_local',
+    '截止报名（秋季）-本地生': 'deadline_autumn_local',
+    '截止(秋季-本地生)': 'deadline_autumn_local',
+    '截止秋季本地': 'deadline_autumn_local',
+    '截止报名（秋季-非本地生）': 'deadline_autumn_nonlocal',
+    '截止报名（秋季）-非本地生': 'deadline_autumn_nonlocal',
+    '截止(秋季-非本地生)': 'deadline_autumn_nonlocal',
+    '截止秋季非本地': 'deadline_autumn_nonlocal',
+    '截止报名（春季-本地生）': 'deadline_spring_local',
+    '截止报名（春季）-本地生': 'deadline_spring_local',
+    '截止(春季-本地生)': 'deadline_spring_local',
+    '截止春季本地': 'deadline_spring_local',
+    '截止报名（春季-非本地生）': 'deadline_spring_nonlocal',
+    '截止报名（春季）-非本地生': 'deadline_spring_nonlocal',
+    '截止(春季-非本地生)': 'deadline_spring_nonlocal',
+    '截止春季非本地': 'deadline_spring_nonlocal',
     '资历架构': 'qf_level',
     '资历名册登记号码': 'qr_number',
     '学历要求': 'education_requirement',
@@ -1730,10 +1746,14 @@ function downloadTemplate() {
             '兼读制修读时间': '',
             '学年': '2026/2027',
             '身份': '本地生/非本地生',
-            '学费（本地生）': 120000,
-            '学费（非本地生）': 250000,
-            '截止报名（本地生）': '2027-02-28',
-            '截止报名（非本地生）': '2027-01-15',
+            '全日制学费（港币）（本地生）': 120000,
+            '全日制学费（港币）（非本地生）': 250000,
+            '兼读制学费（港币）（本地生）': '',
+            '兼读制学费（港币）（非本地生）': '',
+            '截止报名（秋季）（本地生）': '2027-02-28',
+            '截止报名（秋季）（非本地生）': '2027-01-15',
+            '截止报名（春季）（本地生）': '',
+            '截止报名（春季）（非本地生）': '',
             '资历架构': 'QF Level 6',
             '资历名册登记号码': 'QR789012',
             '学历要求': '持有计算机或相关学科学士学位',
@@ -1834,8 +1854,7 @@ async function handleExcelUpload(event) {
             }
 
             // 数值转换
-            if (course.tuition_local) course.tuition_local = parseFloat(String(course.tuition_local).replace(/,/g, '')) || 0;
-            if (course.tuition_non_local) course.tuition_non_local = parseFloat(String(course.tuition_non_local).replace(/,/g, '')) || 0;
+            
             if (course.tuition_ft_local) course.tuition_ft_local = parseFloat(String(course.tuition_ft_local).replace(/,/g, '')) || 0;
             if (course.tuition_ft_nonlocal) course.tuition_ft_nonlocal = parseFloat(String(course.tuition_ft_nonlocal).replace(/,/g, '')) || 0;
             if (course.tuition_pt_local) course.tuition_pt_local = parseFloat(String(course.tuition_pt_local).replace(/,/g, '')) || 0;
@@ -1905,8 +1924,11 @@ function showImportPreview(rows, errors) {
     const displayFields = [
         ['school_abbreviation', '学校'], ['subject_category', '学科'], ['course_name_cn', '课程名称'],
         ['teaching_mode', '授课方式'], ['degree', '学位'], ['teaching_format', '授课形式'], ['study_mode', '学制'], ['teaching_language', '语言'],
-        ['academic_year', '学年'], ['student_identity', '身份'], ['tuition_local', '学费(本地)'],
-        ['tuition_non_local', '学费(非本地)'],
+        ['academic_year', '学年'], ['student_identity', '身份'],
+        ['tuition_ft_local', '全日制学费(本地)'], ['tuition_ft_nonlocal', '全日制学费(非本地)'],
+        ['tuition_pt_local', '兼读制学费(本地)'], ['tuition_pt_nonlocal', '兼读制学费(非本地)'],
+        ['deadline_autumn_local', '截止(秋季-本地)'], ['deadline_autumn_nonlocal', '截止(秋季-非本地)'],
+        ['deadline_spring_local', '截止(春季-本地)'], ['deadline_spring_nonlocal', '截止(春季-非本地)'],
     ];
 
     const thead = document.getElementById('import-preview-thead');
@@ -1914,7 +1936,7 @@ function showImportPreview(rows, errors) {
 
     const tbody = document.getElementById('import-preview-tbody');
     if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-secondary);">无数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--text-secondary);">无数据</td></tr>';
     } else {
         tbody.innerHTML = rows.map(r => `
             <tr style="${r._valid ? '' : 'background:#fef5f5;'}">

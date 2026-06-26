@@ -202,7 +202,7 @@ table tbody tr:hover{background:#f8fafd}
 <div class="panel">
 <div class="panel-header"><h3>📚 课程列表 <span id="course-count" class="text-muted"></span></h3></div>
 <div class="panel-body no-padding"><div class="table-wrapper"><table><thead><tr>
-<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学位</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>学费（港币）</th><th>截止报名</th><th>操作</th>
+<th>课程编号</th><th>学校</th><th>学科</th><th>授课方式</th><th>学位</th><th>课程名称</th><th>学制</th><th>授课语言</th><th>修读时间</th><th>学年</th><th>身份</th><th>全日制学费（港币）</th><th>兼读制学费（港币）</th><th>截止报名（秋季）</th><th>截止报名（春季）</th><th>操作</th>
 </tr></thead><tbody id="courses-tbody"></tbody></table></div></div>
 </div></div>
 
@@ -263,10 +263,14 @@ table tbody tr:hover{background:#f8fafd}
 <div class="form-group"><label><span class="required">*</span> 身份</label><select id="cm-identity"><option value="">请选择</option><option>本地生/非本地生</option><option>仅本地生</option><option>仅非本地生</option></select></div>
 <div class="form-group"><label>学位</label><select id="cm-degree"><option value="">请选择</option><option>高级文凭</option><option>副学士</option><option>学士</option><option>硕士</option><option>博士</option></select></div>
 <div class="form-group"><label>授课形式</label><select id="cm-format"><option value="">请选择</option><option>面授</option><option>遥距</option></select></div>
-<div class="form-group"><label>学费 - 本地生 (HKD)</label><input type="number" id="cm-tuition-local" step="1000" min="0"></div>
-<div class="form-group"><label>学费 - 非本地生 (HKD)</label><input type="number" id="cm-tuition-nonlocal" step="1000" min="0"></div>
-<div class="form-group"><label>截止报名 - 本地生</label><input type="date" id="cm-deadline-local"></div>
-<div class="form-group"><label>截止报名 - 非本地生</label><input type="date" id="cm-deadline-nonlocal"></div>
+<div class="form-group"><label>全日制学费 - 本地生 (HKD)</label><input type="number" id="cm-tuition-ft-local" step="1000" min="0"></div>
+<div class="form-group"><label>全日制学费 - 非本地生 (HKD)</label><input type="number" id="cm-tuition-ft-nonlocal" step="1000" min="0"></div>
+<div class="form-group"><label>兼读制学费 - 本地生 (HKD)</label><input type="number" id="cm-tuition-pt-local" step="1000" min="0"></div>
+<div class="form-group"><label>兼读制学费 - 非本地生 (HKD)</label><input type="number" id="cm-tuition-pt-nonlocal" step="1000" min="0"></div>
+<div class="form-group"><label>截止报名（秋季）- 本地生</label><input type="date" id="cm-deadline-autumn-local"></div>
+<div class="form-group"><label>截止报名（秋季）- 非本地生</label><input type="date" id="cm-deadline-autumn-nonlocal"></div>
+<div class="form-group"><label>截止报名（春季）- 本地生</label><input type="date" id="cm-deadline-spring-local"></div>
+<div class="form-group"><label>截止报名（春季）- 非本地生</label><input type="date" id="cm-deadline-spring-nonlocal"></div>
 <div class="form-group"><label>资历架构</label><select id="cm-qf"><option value="">请选择</option><option>QF Level 5</option><option>QF Level 6</option><option>QF Level 7</option></select></div>
 <div class="form-group"><label>资历名册登记号码</label><input type="text" id="cm-qr"></div>
 </div>
@@ -537,16 +541,24 @@ function getFilteredCourses(){
     if(sm)list=list.filter(c=>c.study_mode===sm);
     if(year)list=list.filter(c=>c.academic_year===year);
     if(idt)list=list.filter(c=>c.student_identity===idt);
-    if(tmin>0||tmax<Infinity)list=list.filter(c=>(c.tuition_non_local||0)>=tmin&&(c.tuition_non_local||0)<=tmax||(c.tuition_local||0)>=tmin&&(c.tuition_local||0)<=tmax);
-    if(dsort==='asc')list.sort((a,b)=>(a.deadline_non_local||'9999-99-99').localeCompare(b.deadline_non_local||'9999-99-99'));
-    else if(dsort==='desc')list.sort((a,b)=>(b.deadline_non_local||'0000-00-00').localeCompare(a.deadline_non_local||'0000-00-00'));
+    if(tmin>0||tmax<Infinity)list=list.filter(c=>(c.tuition_ft_nonlocal||c.tuition_pt_nonlocal||0)>=tmin&&(c.tuition_ft_nonlocal||c.tuition_pt_nonlocal||0)<=tmax||(c.tuition_ft_local||c.tuition_pt_local||0)>=tmin&&(c.tuition_ft_local||c.tuition_pt_local||0)<=tmax);
+    if(dsort==='asc')list.sort((a,b)=>{
+        const aa=a.deadline_autumn_nonlocal||a.deadline_spring_nonlocal||'9999-99-99';
+        const bb=b.deadline_autumn_nonlocal||b.deadline_spring_nonlocal||'9999-99-99';
+        return aa.localeCompare(bb);
+    });
+    else if(dsort==='desc')list.sort((a,b)=>{
+        const aa=a.deadline_autumn_nonlocal||a.deadline_spring_nonlocal||'0000-00-00';
+        const bb=b.deadline_autumn_nonlocal||b.deadline_spring_nonlocal||'0000-00-00';
+        return bb.localeCompare(aa);
+    });
     return list;
 }
 function renderCourses(){
     const list=getFilteredCourses();
     document.getElementById('course-count').textContent='（共 '+list.length+' 个课程）';
     const tbody=document.getElementById('courses-tbody');
-    if(!list.length){tbody.innerHTML='<tr><td colspan="14"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
+    if(!list.length){tbody.innerHTML='<tr><td colspan="16"><div class="empty-state"><div class="icon">📚</div><p>暂无匹配课程</p></div></td></tr>';updateCourseStats(list);return}
     tbody.innerHTML=list.map(c=>{
         const s=getSchool(c.school_id);
         const fmtYr=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
@@ -560,25 +572,45 @@ function renderCourses(){
         }
         const studyModeHtml=esc(c.study_mode).replace(/\//g,'<br>');
         const identityHtml=esc(c.student_identity).replace(/\//g,'<br>');
-        let tuitionHtml='—';
-        const tl=c.tuition_local?Number(c.tuition_local):null;
-        const tn=c.tuition_non_local?Number(c.tuition_non_local):null;
-        if(tl!==null&&tn!==null&&tl!==tn){
-            tuitionHtml='HKD'+tl.toLocaleString()+'（本地生）<br>HKD'+tn.toLocaleString()+'（非本地生）';
-        } else if(tl!==null){
-            tuitionHtml='HKD'+tl.toLocaleString()+'（本地生）';
-        } else if(tn!==null){
-            tuitionHtml='HKD'+tn.toLocaleString()+'（非本地生）';
+        let tuitionFtHtml='—';
+        const tfl=c.tuition_ft_local?Number(c.tuition_ft_local):null;
+        const tfn=c.tuition_ft_nonlocal?Number(c.tuition_ft_nonlocal):null;
+        if(tfl!==null&&tfn!==null&&tfl!==tfn){
+            tuitionFtHtml='HKD'+tfl.toLocaleString()+'（本地生）<br>HKD'+tfn.toLocaleString()+'（非本地生）';
+        } else if(tfl!==null){
+            tuitionFtHtml='HKD'+tfl.toLocaleString()+'（本地生）';
+        } else if(tfn!==null){
+            tuitionFtHtml='HKD'+tfn.toLocaleString()+'（非本地生）';
         }
-        let deadlineHtml='—';
-        const dl=c.deadline_local?fmtDate(c.deadline_local):null;
-        const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):null;
-        if(dl&&dn&&dl!==dn){
-            deadlineHtml=dl+'（本地生）<br>'+dn+'（非本地生）';
-        } else if(dl){
-            deadlineHtml=dl+'（本地生）';
-        } else if(dn){
-            deadlineHtml=dn+'（非本地生）';
+        let tuitionPtHtml='—';
+        const tpl=c.tuition_pt_local?Number(c.tuition_pt_local):null;
+        const tpn=c.tuition_pt_nonlocal?Number(c.tuition_pt_nonlocal):null;
+        if(tpl!==null&&tpn!==null&&tpl!==tpn){
+            tuitionPtHtml='HKD'+tpl.toLocaleString()+'（本地生）<br>HKD'+tpn.toLocaleString()+'（非本地生）';
+        } else if(tpl!==null){
+            tuitionPtHtml='HKD'+tpl.toLocaleString()+'（本地生）';
+        } else if(tpn!==null){
+            tuitionPtHtml='HKD'+tpn.toLocaleString()+'（非本地生）';
+        }
+        let deadlineAutumnHtml='—';
+        const dal=c.deadline_autumn_local?fmtDate(c.deadline_autumn_local):null;
+        const dan=c.deadline_autumn_nonlocal?fmtDate(c.deadline_autumn_nonlocal):null;
+        if(dal&&dan&&dal!==dan){
+            deadlineAutumnHtml=dal+'（本地生）<br>'+dan+'（非本地生）';
+        } else if(dal){
+            deadlineAutumnHtml=dal+'（本地生）';
+        } else if(dan){
+            deadlineAutumnHtml=dan+'（非本地生）';
+        }
+        let deadlineSpringHtml='—';
+        const dsl=c.deadline_spring_local?fmtDate(c.deadline_spring_local):null;
+        const dsn=c.deadline_spring_nonlocal?fmtDate(c.deadline_spring_nonlocal):null;
+        if(dsl&&dsn&&dsl!==dsn){
+            deadlineSpringHtml=dsl+'（本地生）<br>'+dsn+'（非本地生）';
+        } else if(dsl){
+            deadlineSpringHtml=dsl+'（本地生）';
+        } else if(dsn){
+            deadlineSpringHtml=dsn+'（非本地生）';
         }
         return `<tr>
 <td><span class="badge badge-primary">${esc(c.course_code)}</span></td>
@@ -592,8 +624,10 @@ function renderCourses(){
 <td style="font-size:13px">${dur}</td>
 <td>${esc(c.academic_year)}</td>
 <td style="font-size:12px;line-height:1.6;white-space:nowrap">${identityHtml}</td>
-<td style="font-size:12px;line-height:1.6">${tuitionHtml}</td>
-<td style="font-size:12px;line-height:1.6">${deadlineHtml}</td>
+<td style="font-size:12px;line-height:1.6">${tuitionFtHtml}</td>
+<td style="font-size:12px;line-height:1.6">${tuitionPtHtml}</td>
+<td style="font-size:12px;line-height:1.6">${deadlineAutumnHtml}</td>
+<td style="font-size:12px;line-height:1.6">${deadlineSpringHtml}</td>
 <td><button class="btn btn-outline btn-xs admin-only" onclick="editCourse(${c.id})">✏️</button>
 <button class="btn btn-danger btn-xs admin-only" onclick="deleteCourse(${c.id})">🗑</button></td></tr>`;
     }).join('');
@@ -625,8 +659,8 @@ function openCourseModal(id){
     document.getElementById('cm-title').textContent='添加课程';
     // Reset form
     ['cm-school','cm-subject','cm-teaching-mode','cm-name-cn','cm-name-en','cm-language','cm-study-mode',
-     'cm-dur-ft','cm-dur-pt','cm-year','cm-identity','cm-degree','cm-format','cm-tuition-local','cm-tuition-nonlocal',
-     'cm-deadline-local','cm-deadline-nonlocal','cm-qf','cm-qr','cm-edu-req','cm-ch-dse','cm-ch-gaokao',
+     'cm-dur-ft','cm-dur-pt','cm-year','cm-identity','cm-degree','cm-format','cm-tuition-ft-local','cm-tuition-ft-nonlocal','cm-tuition-pt-local','cm-tuition-pt-nonlocal',
+     'cm-deadline-autumn-local','cm-deadline-autumn-nonlocal','cm-deadline-spring-local','cm-deadline-spring-nonlocal','cm-qf','cm-qr','cm-edu-req','cm-ch-dse','cm-ch-gaokao',
      'cm-ch-hsk','cm-ch-other','cm-en-dse','cm-en-gaokao','cm-en-toefl-pbt','cm-en-toefl-ibt',
      'cm-en-ielts','cm-en-cet4','cm-en-cet6','cm-en-other','cm-other-req','cm-desc','cm-page-url','cm-brochure-url'].forEach(id=>{
         const el=document.getElementById(id);if(el)el.value='';
@@ -647,9 +681,12 @@ function openCourseModal(id){
         setVal('cm-study-mode',c.study_mode);setVal('cm-dur-ft',c.study_duration_ft||'');
         setVal('cm-dur-pt',c.study_duration_pt||'');setVal('cm-year',c.academic_year);
         setVal('cm-identity',c.student_identity);setVal('cm-degree',c.degree||'');setVal('cm-format',c.teaching_format||'面授');
-        setVal('cm-tuition-local',c.tuition_local||'');
-        setVal('cm-tuition-nonlocal',c.tuition_non_local||'');
-        setVal('cm-deadline-local',c.deadline_local||'');setVal('cm-deadline-nonlocal',c.deadline_non_local||'');
+        setVal('cm-tuition-ft-local',c.tuition_ft_local||'');
+        setVal('cm-tuition-ft-nonlocal',c.tuition_ft_nonlocal||'');
+        setVal('cm-tuition-pt-local',c.tuition_pt_local||'');
+        setVal('cm-tuition-pt-nonlocal',c.tuition_pt_nonlocal||'');
+        setVal('cm-deadline-autumn-local',c.deadline_autumn_local||'');setVal('cm-deadline-autumn-nonlocal',c.deadline_autumn_nonlocal||'');
+        setVal('cm-deadline-spring-local',c.deadline_spring_local||'');setVal('cm-deadline-spring-nonlocal',c.deadline_spring_nonlocal||'');
         setVal('cm-qf',c.qf_level||'');setVal('cm-qr',c.qr_number||'');
         setVal('cm-edu-req',c.education_requirement||'');
         setVal('cm-chinese-req',c.chinese_req?'1':'0');setVal('cm-english-req',c.english_req?'1':'0');
@@ -690,10 +727,14 @@ function saveCourse(){
         student_identity:document.getElementById('cm-identity').value,
         degree:document.getElementById('cm-degree').value,
         teaching_format:document.getElementById('cm-format').value||'面授',
-        tuition_local:parseFloat(document.getElementById('cm-tuition-local').value)||0,
-        tuition_non_local:parseFloat(document.getElementById('cm-tuition-nonlocal').value)||0,
-        deadline_local:document.getElementById('cm-deadline-local').value,
-        deadline_non_local:document.getElementById('cm-deadline-nonlocal').value,
+        tuition_ft_local:parseFloat(document.getElementById('cm-tuition-ft-local').value)||0,
+        tuition_ft_nonlocal:parseFloat(document.getElementById('cm-tuition-ft-nonlocal').value)||0,
+        tuition_pt_local:parseFloat(document.getElementById('cm-tuition-pt-local').value)||0,
+        tuition_pt_nonlocal:parseFloat(document.getElementById('cm-tuition-pt-nonlocal').value)||0,
+        deadline_autumn_local:document.getElementById('cm-deadline-autumn-local').value,
+        deadline_autumn_nonlocal:document.getElementById('cm-deadline-autumn-nonlocal').value,
+        deadline_spring_local:document.getElementById('cm-deadline-spring-local').value,
+        deadline_spring_nonlocal:document.getElementById('cm-deadline-spring-nonlocal').value,
         qf_level:document.getElementById('cm-qf').value,
         qr_number:document.getElementById('cm-qr').value.trim(),
         education_requirement:document.getElementById('cm-edu-req').value.trim(),
@@ -766,10 +807,14 @@ function viewDetail(id){
     const c=DB.courses.find(x=>x.id===id);if(!c)return;
     const cs=v=>{if(v==null||v==='')return'';return String(v).replace(/(分|级)$/,'')};
     const s=getSchool(c.school_id);
-    const tl=c.tuition_local?'HKD'+Number(c.tuition_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
-    const tn=c.tuition_non_local?'HKD'+Number(c.tuition_non_local).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
-    const dl=c.deadline_local?fmtDate(c.deadline_local):'—';
-    const dn=c.deadline_non_local?fmtDate(c.deadline_non_local):'—';
+    const tfl=c.tuition_ft_local?'HKD'+Number(c.tuition_ft_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
+    const tfn=c.tuition_ft_nonlocal?'HKD'+Number(c.tuition_ft_nonlocal).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
+    const tpl=c.tuition_pt_local?'HKD'+Number(c.tuition_pt_local).toLocaleString()+'（本地生）':'HKD—（本地生）';
+    const tpn=c.tuition_pt_nonlocal?'HKD'+Number(c.tuition_pt_nonlocal).toLocaleString()+'（非本地生）':'HKD—（非本地生）';
+    const dal=c.deadline_autumn_local?fmtDate(c.deadline_autumn_local):'—';
+    const dan=c.deadline_autumn_nonlocal?fmtDate(c.deadline_autumn_nonlocal):'—';
+    const dsl=c.deadline_spring_local?fmtDate(c.deadline_spring_local):'—';
+    const dsn=c.deadline_spring_nonlocal?fmtDate(c.deadline_spring_nonlocal):'—';
     const fmtYr2=v=>v==null?'—':(v===Math.floor(v)?Math.floor(v):v)+'年';
     let dur='—';
     if(c.study_mode==='全日制/兼读制')dur=fmtYr2(c.study_duration_ft)+'/'+fmtYr2(c.study_duration_pt);
@@ -791,8 +836,10 @@ function viewDetail(id){
 <div class="detail-item"><div class="detail-label">授课语言</div><div class="detail-value">${esc(c.teaching_language)}</div></div>
 <div class="detail-item"><div class="detail-label">资历架构</div><div class="detail-value">${c.qf_level||'—'}</div></div>
 <div class="detail-item"><div class="detail-label">资历名册登记号码</div><div class="detail-value">${c.qr_number||'—'}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">学费（港币）</div><div class="detail-value">${tl} / ${tn}</div></div>
-<div class="detail-item detail-full"><div class="detail-label">截止报名</div><div class="detail-value">${dl}（本地生）/ ${dn}（非本地生）</div></div>
+<div class="detail-item detail-full"><div class="detail-label">全日制学费（港币）</div><div class="detail-value">${tfl} / ${tfn}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">兼读制学费（港币）</div><div class="detail-value">${tpl} / ${tpn}</div></div>
+<div class="detail-item detail-full"><div class="detail-label">截止报名（秋季）</div><div class="detail-value">${dal}（本地生）/ ${dan}（非本地生）</div></div>
+<div class="detail-item detail-full"><div class="detail-label">截止报名（春季）</div><div class="detail-value">${dsl}（本地生）/ ${dsn}（非本地生）</div></div>
 </div>
 <div class="detail-section"><h4>📝 报读要求</h4></div>
 <div class="detail-grid">
@@ -850,8 +897,11 @@ function renderAuditLog(){
     const fn={'name_cn':'学校名称(中)','abbreviation':'简称','name_en':'学校名称(英)','website':'网站',
         'course_name_cn':'课程名称','course_name_en':'英文简称','subject_category':'学科分类',
         'teaching_mode':'授课方式','study_mode':'学制','teaching_language':'授课语言',
-        'academic_year':'学年','student_identity':'身份','tuition_local':'学费(本地)',
-        'tuition_non_local':'学费(非本地)','deadline_local':'截止(本地)','deadline_non_local':'截止(非本地)',
+        'academic_year':'学年','student_identity':'身份',
+        'tuition_ft_local':'全日制学费(本地)','tuition_ft_nonlocal':'全日制学费(非本地)',
+        'tuition_pt_local':'兼读制学费(本地)','tuition_pt_nonlocal':'兼读制学费(非本地)',
+        'deadline_autumn_local':'截止(秋季-本地)','deadline_autumn_nonlocal':'截止(秋季-非本地)',
+        'deadline_spring_local':'截止(春季-本地)','deadline_spring_nonlocal':'截止(春季-非本地)',
         'study_duration_ft':'全日制修读时间','study_duration_pt':'兼读制修读时间',
         'chinese_exempt':'中文免试','english_exempt':'英文免试','interview_required':'面试要求',
         'qf_level':'资历架构','qr_number':'资历登记号','course_page_url':'课程主页','course_brochure_url':'课程简章'};
@@ -934,10 +984,14 @@ const EXCEL_COLUMN_MAP = {
     '兼读制修读时间':'study_duration_pt','兼读制修读时间（年）':'study_duration_pt',
     '学年':'academic_year',
     '身份':'student_identity',
-    '学费（本地生）':'tuition_local','学费-本地生':'tuition_local','学费(本地生)':'tuition_local','学费本地':'tuition_local',
-    '学费（非本地生）':'tuition_non_local','学费-非本地生':'tuition_non_local','学费(非本地生)':'tuition_non_local','学费非本地':'tuition_non_local',
-    '截止报名（本地生）':'deadline_local','截止报名-本地生':'deadline_local','截止(本地生)':'deadline_local','截止本地':'deadline_local',
-    '截止报名（非本地生）':'deadline_non_local','截止报名-非本地生':'deadline_non_local','截止(非本地生)':'deadline_non_local','截止非本地':'deadline_non_local',
+    '全日制学费（本地生）':'tuition_ft_local','全日制学费-本地生':'tuition_ft_local','全日制学费(本地生)':'tuition_ft_local','全日制学费本地':'tuition_ft_local',
+    '全日制学费（非本地生）':'tuition_ft_nonlocal','全日制学费-非本地生':'tuition_ft_nonlocal','全日制学费(非本地生)':'tuition_ft_nonlocal','全日制学费非本地':'tuition_ft_nonlocal',
+    '兼读制学费（本地生）':'tuition_pt_local','兼读制学费-本地生':'tuition_pt_local','兼读制学费(本地生)':'tuition_pt_local','兼读制学费本地':'tuition_pt_local',
+    '兼读制学费（非本地生）':'tuition_pt_nonlocal','兼读制学费-非本地生':'tuition_pt_nonlocal','兼读制学费(非本地生)':'tuition_pt_nonlocal','兼读制学费非本地':'tuition_pt_nonlocal',
+    '截止报名（秋季-本地生）':'deadline_autumn_local','截止报名（秋季）-本地生':'deadline_autumn_local','截止(秋季-本地生)':'deadline_autumn_local','截止秋季本地':'deadline_autumn_local',
+    '截止报名（秋季-非本地生）':'deadline_autumn_nonlocal','截止报名（秋季）-非本地生':'deadline_autumn_nonlocal','截止(秋季-非本地生)':'deadline_autumn_nonlocal','截止秋季非本地':'deadline_autumn_nonlocal',
+    '截止报名（春季-本地生）':'deadline_spring_local','截止报名（春季）-本地生':'deadline_spring_local','截止(春季-本地生)':'deadline_spring_local','截止春季本地':'deadline_spring_local',
+    '截止报名（春季-非本地生）':'deadline_spring_nonlocal','截止报名（春季）-非本地生':'deadline_spring_nonlocal','截止(春季-非本地生)':'deadline_spring_nonlocal','截止春季非本地':'deadline_spring_nonlocal',
     '资历架构':'qf_level',
     '资历名册登记号码':'qr_number',
     '学历要求':'education_requirement',
@@ -960,8 +1014,10 @@ function downloadTemplate() {
             '授课方式':'授课式',
             '学位':'硕士','授课形式':'面授','学制':'全日制/兼读制','授课语言':'英语',
             '全日制修读时间':1,'兼读制修读时间':2,'学年':'2026/2027','身份':'本地生/非本地生',
-            '学费（本地生）':150000,'学费（非本地生）':300000,
-            '截止报名（本地生）':'2027-01-31','截止报名（非本地生）':'2026-12-31',
+            '全日制学费（本地生）':150000,'全日制学费（非本地生）':300000,
+            '兼读制学费（本地生）':120000,'兼读制学费（非本地生）':250000,
+            '截止报名（秋季-本地生）':'2027-01-31','截止报名（秋季-非本地生）':'2026-12-31',
+            '截止报名（春季-本地生）':'2027-06-30','截止报名（春季-非本地生）':'2027-05-31',
             '资历架构':'QF Level 6','资历名册登记号码':'QR123456','学历要求':'持有认可学士学位',
             '中文要求':'是','英文要求':'是',
             '中文免试':'否','中文DSE':'','中文高考':'','中文HSK':'','中文其他':'',
@@ -974,8 +1030,10 @@ function downloadTemplate() {
             '授课方式':'授课式',
             '学位':'硕士','授课形式':'面授','学制':'仅全日制','授课语言':'英语',
             '全日制修读时间':1,'兼读制修读时间':'','学年':'2026/2027','身份':'本地生/非本地生',
-            '学费（本地生）':120000,'学费（非本地生）':250000,
-            '截止报名（本地生）':'2027-02-28','截止报名（非本地生）':'2027-01-15',
+            '全日制学费（本地生）':120000,'全日制学费（非本地生）':250000,
+            '兼读制学费（本地生）':'','兼读制学费（非本地生）':'',
+            '截止报名（秋季-本地生）':'2027-02-28','截止报名（秋季-非本地生）':'2027-01-15',
+            '截止报名（春季-本地生）':'','截止报名（春季-非本地生）':'',
             '资历架构':'QF Level 6','资历名册登记号码':'QR789012','学历要求':'持有计算机或相关学科学士学位',
             '中文要求':'否','英文要求':'是',
             '中文免试':'是','中文DSE':'','中文高考':'','中文HSK':'','中文其他':'',
@@ -1037,8 +1095,10 @@ async function handleExcelUpload(event) {
                 else { errors.push('第 ' + (idx + 2) + ' 行：找不到学校「' + course.school_abbreviation + '」—— 可选学校：' + schoolList.join('、')); }
             }
 
-            if (course.tuition_local) course.tuition_local = parseFloat(String(course.tuition_local).replace(/,/g, '')) || 0;
-            if (course.tuition_non_local) course.tuition_non_local = parseFloat(String(course.tuition_non_local).replace(/,/g, '')) || 0;
+            if (course.tuition_ft_local) course.tuition_ft_local = parseFloat(String(course.tuition_ft_local).replace(/,/g, '')) || 0;
+            if (course.tuition_ft_nonlocal) course.tuition_ft_nonlocal = parseFloat(String(course.tuition_ft_nonlocal).replace(/,/g, '')) || 0;
+            if (course.tuition_pt_local) course.tuition_pt_local = parseFloat(String(course.tuition_pt_local).replace(/,/g, '')) || 0;
+            if (course.tuition_pt_nonlocal) course.tuition_pt_nonlocal = parseFloat(String(course.tuition_pt_nonlocal).replace(/,/g, '')) || 0;
             if (course.study_duration_ft) course.study_duration_ft = parseFloat(String(course.study_duration_ft).replace(/,/g, '')) || null;
             if (course.study_duration_pt) course.study_duration_pt = parseFloat(String(course.study_duration_pt).replace(/,/g, '')) || null;
 
@@ -1093,8 +1153,11 @@ function showImportPreview(rows, errors) {
     const displayFields = [
         ['school_abbreviation','学校'],['subject_category','学科'],['course_name_cn','课程名称'],
         ['teaching_mode','授课方式'],['degree','学位'],['teaching_format','授课形式'],['study_mode','学制'],['teaching_language','语言'],
-        ['academic_year','学年'],['student_identity','身份'],['tuition_local','学费(本地)'],
-        ['tuition_non_local','学费(非本地)'],
+        ['academic_year','学年'],['student_identity','身份'],
+            ['tuition_ft_local','全日制学费(本地)'],['tuition_ft_nonlocal','全日制学费(非本地)'],
+            ['tuition_pt_local','兼读制学费(本地)'],['tuition_pt_nonlocal','兼读制学费(非本地)'],
+            ['deadline_autumn_local','截止(秋季-本地)'],['deadline_autumn_nonlocal','截止(秋季-非本地)'],
+            ['deadline_spring_local','截止(春季-本地)'],['deadline_spring_nonlocal','截止(春季-非本地)'],
     ];
 
     document.getElementById('import-preview-thead').innerHTML =
@@ -1102,7 +1165,7 @@ function showImportPreview(rows, errors) {
 
     const tbody = document.getElementById('import-preview-tbody');
     if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-secondary);">无数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--text-secondary);">无数据</td></tr>';
     } else {
         tbody.innerHTML = rows.map(function(r) {
             return '<tr style="' + (r._valid ? '' : 'background:#fef5f5;') + '">' +

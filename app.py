@@ -786,26 +786,26 @@ def get_courses():
         params.append(request.args['student_identity'])
 
     if request.args.get('tuition_min'):
-        query += " AND (c.tuition_non_local >= ? OR c.tuition_local >= ?)"
+        query += " AND (c.tuition_ft_nonlocal >= ? OR c.tuition_pt_nonlocal >= ? OR c.tuition_ft_local >= ? OR c.tuition_pt_local >= ?)"
         tmin = float(request.args['tuition_min'])
-        params.extend([tmin, tmin])
+        params.extend([tmin, tmin, tmin, tmin])
 
     if request.args.get('tuition_max'):
-        query += " AND (c.tuition_non_local <= ? OR c.tuition_local <= ?)"
+        query += " AND (c.tuition_ft_nonlocal <= ? OR c.tuition_pt_nonlocal <= ? OR c.tuition_ft_local <= ? OR c.tuition_pt_local <= ?)"
         tmax = float(request.args['tuition_max'])
-        params.extend([tmax, tmax])
+        params.extend([tmax, tmax, tmax, tmax])
 
     if request.args.get('deadline_sort'):
         if request.args['deadline_sort'] == 'asc':
             if USE_PG:
-                query += " ORDER BY NULLIF(c.deadline_non_local, '') ASC NULLS LAST"
+                query += " ORDER BY NULLIF(COALESCE(c.deadline_autumn_nonlocal, c.deadline_spring_nonlocal), '') ASC NULLS LAST"
             else:
-                query += " ORDER BY CASE WHEN c.deadline_non_local = '' THEN '9999-99-99' ELSE c.deadline_non_local END ASC"
+                query += " ORDER BY CASE WHEN COALESCE(c.deadline_autumn_nonlocal, c.deadline_spring_nonlocal, '9999-99-99') = '' THEN '9999-99-99' ELSE COALESCE(c.deadline_autumn_nonlocal, c.deadline_spring_nonlocal) END ASC"
         elif request.args['deadline_sort'] == 'desc':
             if USE_PG:
-                query += " ORDER BY NULLIF(c.deadline_non_local, '') DESC NULLS LAST"
+                query += " ORDER BY NULLIF(COALESCE(c.deadline_autumn_nonlocal, c.deadline_spring_nonlocal), '') DESC NULLS LAST"
             else:
-                query += " ORDER BY CASE WHEN c.deadline_non_local = '' THEN '0000-00-00' ELSE c.deadline_non_local END DESC"
+                query += " ORDER BY CASE WHEN COALESCE(c.deadline_autumn_nonlocal, c.deadline_spring_nonlocal, '0000-00-00') = '' THEN '0000-00-00' ELSE COALESCE(c.deadline_autumn_nonlocal, c.deadline_spring_nonlocal) END DESC"
     else:
         query += " ORDER BY c.id DESC"
 
@@ -851,7 +851,8 @@ def add_course():
                 course_code, school_id, subject_category, course_name_cn, course_name_en,
                 teaching_mode, study_mode, study_duration_ft, study_duration_pt,
                 teaching_language, academic_year, student_identity, degree, teaching_format,
-                tuition_local, tuition_non_local, deadline_local, deadline_non_local,
+                tuition_ft_local, tuition_ft_nonlocal, tuition_pt_local, tuition_pt_nonlocal,
+                deadline_autumn_local, deadline_autumn_nonlocal, deadline_spring_local, deadline_spring_nonlocal,
                 qf_level, qr_number, education_requirement,
                 chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
                 english_exempt, english_dse, english_gaokao, english_toefl_pbt,
@@ -859,7 +860,7 @@ def add_course():
                 chinese_req, english_req,
                 other_requirements, interview_required,
                 course_description, course_page_url, course_brochure_url
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             new_code,
             data['school_id'], data['subject_category'], data['course_name_cn'], data.get('course_name_en', ''),
@@ -867,8 +868,10 @@ def add_course():
             data.get('study_duration_ft'), data.get('study_duration_pt'),
             data['teaching_language'], data['academic_year'], data['student_identity'],
             data.get('degree', ''), data.get('teaching_format', '') or '面授',
-            data.get('tuition_local', 0), data.get('tuition_non_local', 0),
-            data.get('deadline_local', ''), data.get('deadline_non_local', ''),
+            data.get('tuition_ft_local', 0), data.get('tuition_ft_nonlocal', 0),
+            data.get('tuition_pt_local', 0), data.get('tuition_pt_nonlocal', 0),
+            data.get('deadline_autumn_local', ''), data.get('deadline_autumn_nonlocal', ''),
+            data.get('deadline_spring_local', ''), data.get('deadline_spring_nonlocal', ''),
             data.get('qf_level', ''), data.get('qr_number', ''),
             data.get('education_requirement', ''),
             1 if data.get('chinese_exempt') else 0,
@@ -881,14 +884,6 @@ def add_course():
             1 if data.get('english_req') else 0,
             data.get('other_requirements', ''),
             1 if data.get('interview_required') else 0,
-            data.get('deadline_autumn_local', ''),
-            data.get('deadline_autumn_nonlocal', ''),
-            data.get('deadline_spring_local', ''),
-            data.get('deadline_spring_nonlocal', ''),
-            data.get('tuition_ft_local', 0),
-            data.get('tuition_ft_nonlocal', 0),
-            data.get('tuition_pt_local', 0),
-            data.get('tuition_pt_nonlocal', 0),
             data.get('course_description', ''), data.get('course_page_url', ''), data.get('course_brochure_url', '')
         ))
         sql_commit()
@@ -985,7 +980,8 @@ def batch_sync_courses():
                     course_code, school_id, subject_category, course_name_cn, course_name_en,
                     teaching_mode, study_mode, study_duration_ft, study_duration_pt,
                     teaching_language, academic_year, student_identity, degree, teaching_format,
-                    tuition_local, tuition_non_local, deadline_local, deadline_non_local,
+                    tuition_ft_local, tuition_ft_nonlocal, tuition_pt_local, tuition_pt_nonlocal,
+                    deadline_autumn_local, deadline_autumn_nonlocal, deadline_spring_local, deadline_spring_nonlocal,
                     qf_level, qr_number, education_requirement,
                     chinese_exempt, chinese_dse, chinese_gaokao, chinese_hsk, chinese_other,
                     english_exempt, english_dse, english_gaokao, english_toefl_pbt,
@@ -1001,8 +997,10 @@ def batch_sync_courses():
                 get_num_nullable('study_duration_ft'), get_num_nullable('study_duration_pt'),
                 get_str('teaching_language'), get_str('academic_year'), get_str('student_identity'),
                 get_str('degree'), get_str('teaching_format') or '面授',
-                get_num('tuition_local'), get_num('tuition_non_local'),
-                get_str('deadline_local'), get_str('deadline_non_local'),
+                get_num('tuition_ft_local'), get_num('tuition_ft_nonlocal'),
+                get_num('tuition_pt_local'), get_num('tuition_pt_nonlocal'),
+                get_str('deadline_autumn_local'), get_str('deadline_autumn_nonlocal'),
+                get_str('deadline_spring_local'), get_str('deadline_spring_nonlocal'),
                 get_str('qf_level'), get_str('qr_number'), get_str('education_requirement'),
                 get_bool('chinese_exempt'), get_str('chinese_dse'), get_str('chinese_gaokao'),
                 get_str('chinese_hsk'), get_str('chinese_other'),
@@ -1011,10 +1009,6 @@ def batch_sync_courses():
                 get_str('english_ielts'), get_str('english_cet4'), get_str('english_cet6'), get_str('english_other'),
                 get_bool('chinese_req'), get_bool('english_req'),
                 get_str('other_requirements'), get_bool('interview_required'),
-                get_str('deadline_autumn_local'), get_str('deadline_autumn_nonlocal'),
-                get_str('deadline_spring_local'), get_str('deadline_spring_nonlocal'),
-                get_num('tuition_ft_local'), get_num('tuition_ft_nonlocal'),
-                get_num('tuition_pt_local'), get_num('tuition_pt_nonlocal'),
                 get_str('course_description'), get_str('course_page_url'), get_str('course_brochure_url')
             ))
             sql_commit()
@@ -1082,7 +1076,8 @@ def update_course(course_id):
             school_id=?, subject_category=?, course_name_cn=?, course_name_en=?,
             teaching_mode=?, study_mode=?, study_duration_ft=?, study_duration_pt=?,
             teaching_language=?, academic_year=?, student_identity=?, degree=?, teaching_format=?,
-            tuition_local=?, tuition_non_local=?, deadline_local=?, deadline_non_local=?,
+            tuition_ft_local=?, tuition_ft_nonlocal=?, tuition_pt_local=?, tuition_pt_nonlocal=?,
+            deadline_autumn_local=?, deadline_autumn_nonlocal=?, deadline_spring_local=?, deadline_spring_nonlocal=?,
             qf_level=?, qr_number=?, education_requirement=?,
             chinese_exempt=?, chinese_dse=?, chinese_gaokao=?, chinese_hsk=?, chinese_other=?,
             english_exempt=?, english_dse=?, english_gaokao=?, english_toefl_pbt=?,
@@ -1096,7 +1091,8 @@ def update_course(course_id):
         gv('school_id'), gv('subject_category'), gv('course_name_cn'), gv('course_name_en'),
         gv('teaching_mode'), gv('study_mode'), gv('study_duration_ft'), gv('study_duration_pt'),
         gv('teaching_language'), gv('academic_year'), gv('student_identity'), gv('degree'), gv('teaching_format') or '面授',
-        gv('tuition_local'), gv('tuition_non_local'), gv('deadline_local'), gv('deadline_non_local'),
+        gv('tuition_ft_local'), gv('tuition_ft_nonlocal'), gv('tuition_pt_local'), gv('tuition_pt_nonlocal'),
+        gv('deadline_autumn_local'), gv('deadline_autumn_nonlocal'), gv('deadline_spring_local'), gv('deadline_spring_nonlocal'),
         gv('qf_level'), gv('qr_number'), gv('education_requirement'),
         1 if data.get('chinese_exempt', old['chinese_exempt']) else 0,
         gv('chinese_dse'), gv('chinese_gaokao'), gv('chinese_hsk'), gv('chinese_other'),
