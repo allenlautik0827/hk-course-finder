@@ -372,11 +372,23 @@ def db_row_to_dict(row):
 def log_audit(table_name, record_id, record_name, action, changes, modified_by='admin'):
     """记录审计日志"""
     now = datetime.now()
-    sql("""INSERT INTO audit_log (table_name, record_id, record_name, action, changes, modified_by, modified_date, modified_time)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (table_name, record_id, record_name, action, json.dumps(changes, ensure_ascii=False),
-         modified_by, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
-    sql_commit()
+    # Safely serialize changes (handle datetime, Decimal, etc.)
+    def default_serializer(obj):
+        if hasattr(obj, 'isoformat'):
+            return obj.isoformat()
+        return str(obj)
+    try:
+        changes_json = json.dumps(changes, ensure_ascii=False, default=default_serializer)
+    except Exception:
+        changes_json = '{}'
+    try:
+        sql("""INSERT INTO audit_log (table_name, record_id, record_name, action, changes, modified_by, modified_date, modified_time)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (table_name, record_id, record_name, action, changes_json,
+             modified_by, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
+        sql_commit()
+    except Exception as e:
+        app.logger.warning(f"log_audit failed (non-critical): {e}")
 
 # ============================================================
 # 页面路由
